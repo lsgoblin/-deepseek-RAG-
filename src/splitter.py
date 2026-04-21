@@ -1,0 +1,2 @@
+"""Text splitter module placeholder."""
+

@@ -1,0 +1,12 @@
+chromadb>=0.4.0
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.0
+langchain>=0.1.0
+pypdf>=3.0.0
+python-docx>=0.8.11
+unstructured>=0.10.0
+gradio>=4.0.0
+streamlit>=1.30.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+

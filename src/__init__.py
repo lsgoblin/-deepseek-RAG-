@@ -1,0 +1,2 @@
+"""RAG course project package."""
+
