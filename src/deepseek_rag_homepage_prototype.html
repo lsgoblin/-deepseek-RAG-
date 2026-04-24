@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 生图提示词优化平台</title>
+  <style>
+    :root{
+      --bg:#F6F8FB;
+      --card:#FFFFFF;
+      --primary:#1565C0;
+      --success:#0F9D58;
+      --danger:#D93025;
+      --text:#1F2937;
+      --muted:#6B7280;
+      --border:#E5E7EB;
+      --shadow:0 10px 30px rgba(15, 23, 42, 0.06);
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .app{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .topbar{
+      background:rgba(255,255,255,0.88);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+      padding:18px 28px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    .brand{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+    }
+    .logo{
+      width:42px;
+      height:42px;
+      border-radius:10px;
+      background:linear-gradient(135deg,#1565C0,#5AA2FF);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      letter-spacing:.5px;
+      box-shadow:var(--shadow);
+      flex-shrink:0;
+    }
+    .brand h1{
+      margin:0;
+      font-size:22px;
+      line-height:1.2;
+    }
+    .brand p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .top-status{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      color:var(--text);
+      padding:8px 12px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:999px;
+    }
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--success);
+    }
+
+    .layout{
+      width:min(1400px, calc(100% - 32px));
+      margin:20px auto;
+      display:grid;
+      grid-template-columns:290px 1fr;
+      gap:20px;
+      align-items:start;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+
+    .sidebar{
+      padding:18px;
+      position:sticky;
+      top:94px;
+    }
+    .sidebar h2,
+    .main h2{
+      margin:0 0 14px;
+      font-size:18px;
+    }
+    .section-title{
+      font-size:13px;
+      color:var(--muted);
+      margin:16px 0 10px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .info-list{
+      display:grid;
+      gap:10px;
+    }
+    .info-item{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      background:#FBFCFE;
+    }
+    .info-item .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .info-item .value{
+      font-size:15px;
+      font-weight:600;
+    }
+    .button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius:10px;
+      padding:12px 16px;
+      font-size:14px;
+      font-weight:600;
+      transition:.2s ease;
+    }
+    .button:hover{transform:translateY(-1px)}
+    .button-primary{
+      color:#fff;
+      background:var(--primary);
+    }
+    .button-secondary{
+      color:var(--text);
+      background:#EEF3FA;
+      border:1px solid #D9E5F5;
+    }
+    .button-ghost{
+      color:var(--primary);
+      background:#F4F8FE;
+      border:1px dashed #BFD4F4;
+      width:100%;
+      margin-top:14px;
+    }
+    .example-list{
+      display:grid;
+      gap:8px;
+      margin-top:6px;
+    }
+    .example{
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      color:#334155;
+      font-size:13px;
+      cursor:pointer;
+    }
+
+    .main{
+      display:grid;
+      gap:18px;
+    }
+    .hero-card{
+      padding:20px;
+    }
+    .hero-card h2{
+      margin-bottom:8px;
+    }
+    .hero-card p{
+      margin:0 0 16px;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .field{
+      display:grid;
+      gap:8px;
+    }
+    .field label{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    input[type="text"],
+    select{
+      width:100%;
+      height:46px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:0 14px;
+      font:inherit;
+      color:var(--text);
+      background:#fff;
+      outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease;
+    }
+    textarea{
+      width:100%;
+      min-height:132px;
+      resize:vertical;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px 16px;
+      font:inherit;
+      outline:none;
+      background:#fff;
+      transition:border-color .2s ease, box-shadow .2s ease;
+    }
+    textarea:focus{
+      border-color:#9EC1F0;
+      box-shadow:0 0 0 4px rgba(21,101,192,.08);
+    }
+    input[type="text"]:focus,
+    select:focus{
+      border-color:#9EC1F0;
+      box-shadow:0 0 0 4px rgba(21,101,192,.08);
+    }
+    .actions{
+      display:flex;
+      gap:12px;
+      margin-top:14px;
+      flex-wrap:wrap;
+    }
+
+    .answer-card, .evidence-card, .message-card{
+      padding:20px;
+    }
+    .label-row{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .source-tags{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .tag{
+      display:inline-flex;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      background:#EEF5FF;
+      color:#174EA6;
+      border:1px solid #D1E2FF;
+    }
+    .answer-box{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:16px;
+      background:#FCFDFE;
+      line-height:1.75;
+      min-height:160px;
+      white-space:pre-wrap;
+    }
+    .answer-placeholder{
+      color:var(--muted);
+    }
+    .subsection-title{
+      margin:16px 0 10px;
+      font-size:13px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .status-banner{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:10px;
+      font-size:14px;
+      border:1px solid transparent;
+    }
+    .status-info{
+      background:#F4F8FE;
+      border-color:#D8E6FA;
+      color:#24528A;
+    }
+    .status-success{
+      background:#F1FBF5;
+      border-color:#C7EED5;
+      color:#17653D;
+    }
+    .status-error{
+      background:#FEF2F2;
+      border-color:#F7CACA;
+      color:#991B1B;
+    }
+
+    .evidence-list{
+      display:grid;
+      gap:14px;
+    }
+    details.evidence-item{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:0;
+      overflow:hidden;
+      background:#fff;
+    }
+    details.evidence-item summary{
+      list-style:none;
+      cursor:pointer;
+      padding:14px 16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+    }
+    details.evidence-item summary::-webkit-details-marker{display:none}
+    .evidence-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+    }
+    .meta-badge{
+      font-size:12px;
+      padding:5px 8px;
+      border-radius:999px;
+      background:#F8FAFC;
+      border:1px solid var(--border);
+      color:#475569;
+    }
+    .evidence-body{
+      border-top:1px solid var(--border);
+      padding:16px;
+      color:#334155;
+      line-height:1.7;
+      background:#FBFCFE;
+    }
+    .system-msg{
+      color:var(--muted);
+      line-height:1.7;
+      font-size:14px;
+    }
+
+    @media (max-width: 980px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .form-grid{
+        grid-template-columns:1fr;
+      }
+      .sidebar{
+        position:static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">RAG</div>
+        <div>
+          <h1>AI 生图提示词优化平台</h1>
+          <p>基于 DeepSeek + RAG 的提示词检索增强与优化生成原型</p>
+        </div>
+      </div>
+      <div class="top-status">
+        <div class="pill"><span class="dot"></span><span id="modelPill">模型：DeepSeek</span></div>
+        <div class="pill"><span class="dot"></span><span id="kbPill">知识库：状态未知</span></div>
+        <div class="pill" id="vectorPill">向量库：状态未知</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="card sidebar">
+        <h2>系统状态</h2>
+
+        <div class="info-list">
+          <div class="info-item">
+            <div class="label">提示词知识库状态</div>
+            <div class="value" id="kbStatusValue">检测中</div>
+          </div>
+          <div class="info-item">
+            <div class="label">已加载资料数量</div>
+            <div class="value" id="docCountValue">检测中</div>
+          </div>
+          <div class="info-item">
+            <div class="label">当前向量库</div>
+            <div class="value" id="vectorStoreValue">检测中</div>
+          </div>
+          <div class="info-item">
+            <div class="label">模型与参数</div>
+            <div class="value" id="modelConfigValue">检测中</div>
+          </div>
+        </div>
+
+        <button class="button button-ghost" id="refreshBtn">构建 / 刷新知识库</button>
+
+        <div class="section-title">示例提示词</div>
+        <div class="example-list">
+          <button class="example">赛博朋克少女，雨夜街头，霓虹灯反射，电影感</button>
+          <button class="example">国风仙侠人物，云海，长发飘逸，细节丰富</button>
+          <button class="example">香水产品海报，极简高级感，柔光摄影，白色背景</button>
+        </div>
+      </aside>
+
+      <section class="main">
+        <section class="card hero-card">
+          <h2>提示词优化工作台</h2>
+          <p>输入原始生图提示词，系统将执行“检索提示词知识库 → 优化表达 → 输出可直接使用的提示词”的完整流程。</p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="platformSelect">目标平台</label>
+              <select id="platformSelect">
+                <option value="通用">通用模型</option>
+                <option value="Midjourney">Midjourney</option>
+                <option value="即梦">即梦</option>
+                <option value="OpenAI Images">OpenAI Images</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="styleInput">风格偏好</label>
+              <input id="styleInput" type="text" placeholder="例如：电影感 / 国风 / 商业产品摄影" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="questionInput">原始提示词</label>
+            <textarea id="questionInput" placeholder="例如：赛博朋克少女，雨夜街头，霓虹灯反射，电影感"></textarea>
+          </div>
+          <div class="field">
+            <label for="goalInput">优化目标</label>
+            <input id="goalInput" type="text" placeholder="例如：增强画面层次、提升镜头语言、补足光影和材质描述" />
+          </div>
+          <div class="actions">
+            <button class="button button-primary" id="askBtn">开始优化</button>
+            <button class="button button-secondary" id="clearBtn">清空</button>
+          </div>
+        </section>
+
+        <section class="card answer-card">
+          <div class="label-row">
+            <h2>优化结果</h2>
+            <div class="source-tags" id="sourceTags">
+              <span class="tag">等待优化</span>
+            </div>
+          </div>
+          <div class="subsection-title">优化后提示词</div>
+          <div class="answer-box" id="answerBox">
+            <span class="answer-placeholder">这里将展示优化后的提示词，可直接用于 AI 生图模型。</span>
+          </div>
+          <div class="subsection-title">优化说明</div>
+          <div class="answer-box" id="notesBox">
+            <span class="answer-placeholder">这里将解释系统如何补充风格、镜头、光影、材质和构图等描述。</span>
+          </div>
+          <div class="status-banner status-info" id="statusBanner">系统已准备就绪。你可以输入原始提示词开始优化演示。</div>
+        </section>
+
+        <section class="card evidence-card">
+          <div class="label-row">
+            <h2>优化依据</h2>
+            <div class="source-tags">
+              <span class="tag">RAG 检索证据展示</span>
+            </div>
+          </div>
+          <div class="evidence-list" id="evidenceList">
+            <details class="evidence-item" open>
+              <summary>
+                <div>
+                  <strong>默认状态说明</strong>
+                  <div class="evidence-meta">
+                    <span class="meta-badge">source: system</span>
+                    <span class="meta-badge">chunk: -</span>
+                    <span class="meta-badge">score: -</span>
+                  </div>
+                </div>
+                <span class="meta-badge">点击折叠</span>
+              </summary>
+              <div class="evidence-body">
+                在用户尚未提交提示词前，此区域用于说明“优化依据”的展示方式。实际接入后，这里会显示命中的提示词知识、来源文档、chunk 序号、相似度以及参考片段。
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card message-card">
+          <h2>系统消息</h2>
+          <div class="system-msg" id="systemMsg">
+            当前页面为“AI 生图提示词优化网站”静态原型，已预留默认态、加载态、成功态、空结果态与错误态的界面位置。
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const questionInput = document.getElementById('questionInput');
+    const askBtn = document.getElementById('askBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const platformSelect = document.getElementById('platformSelect');
+    const styleInput = document.getElementById('styleInput');
+    const goalInput = document.getElementById('goalInput');
+    const answerBox = document.getElementById('answerBox');
+    const notesBox = document.getElementById('notesBox');
+    const statusBanner = document.getElementById('statusBanner');
+    const sourceTags = document.getElementById('sourceTags');
+    const evidenceList = document.getElementById('evidenceList');
+    const systemMsg = document.getElementById('systemMsg');
+    const modelPill = document.getElementById('modelPill');
+    const kbPill = document.getElementById('kbPill');
+    const vectorPill = document.getElementById('vectorPill');
+    const kbStatusValue = document.getElementById('kbStatusValue');
+    const docCountValue = document.getElementById('docCountValue');
+    const vectorStoreValue = document.getElementById('vectorStoreValue');
+    const modelConfigValue = document.getElementById('modelConfigValue');
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function renderSources(items){
+      if (!items || items.length === 0) {
+        sourceTags.innerHTML = '<span class="tag">未返回来源</span>';
+        return;
+      }
+      sourceTags.innerHTML = items.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('');
+    }
+
+    function renderEvidence(items){
+      if (!items || items.length === 0) {
+        evidenceList.innerHTML = `
+          <details class="evidence-item" open>
+            <summary>
+              <div>
+                <strong>未命中相关知识片段</strong>
+                <div class="evidence-meta">
+                  <span class="meta-badge">source: none</span>
+                  <span class="meta-badge">chunk: -</span>
+                  <span class="meta-badge">score: -</span>
+                </div>
+              </div>
+              <span class="meta-badge">empty</span>
+            </summary>
+            <div class="evidence-body">当前没有检索到可用于优化的提示词知识，请检查知识库内容或尝试更具体的原始提示词。</div>
+          </details>
+        `;
+        return;
+      }
+
+      evidenceList.innerHTML = items.map((item, index) => {
+        const score = typeof item.score === 'number' ? item.score.toFixed(4) : '未知';
+        const title = `${item.source || 'unknown'} / chunk ${item.chunk_index ?? '-'}`;
+        return `
+          <details class="evidence-item" ${index === 0 ? 'open' : ''}>
+            <summary>
+              <div>
+                <strong>${escapeHtml(title)}</strong>
+                <div class="evidence-meta">
+                  <span class="meta-badge">source: ${escapeHtml(item.source || 'unknown')}</span>
+                  <span class="meta-badge">chunk: ${escapeHtml(item.chunk_index ?? '-')}</span>
+                  <span class="meta-badge">score: ${escapeHtml(score)}</span>
+                </div>
+              </div>
+              <span class="meta-badge">${index === 0 ? '重点命中' : '相关片段'}</span>
+            </summary>
+            <div class="evidence-body">${escapeHtml(item.text || '')}</div>
+          </details>
+        `;
+      }).join('');
+    }
+
+    function setBannerState(type, message) {
+      statusBanner.className = `status-banner ${type}`;
+      statusBanner.textContent = message;
+    }
+
+    function setDefaultState() {
+      answerBox.innerHTML = '<span class="answer-placeholder">这里将展示优化后的提示词，可直接用于 AI 生图模型。</span>';
+      notesBox.innerHTML = '<span class="answer-placeholder">这里将解释系统如何补充风格、镜头、光影、材质和构图等描述。</span>';
+      setBannerState('status-info', '系统已准备就绪。你可以输入原始提示词开始优化演示。');
+      sourceTags.innerHTML = '<span class="tag">等待优化</span>';
+      evidenceList.innerHTML = `
+        <details class="evidence-item" open>
+          <summary>
+            <div>
+              <strong>默认状态说明</strong>
+              <div class="evidence-meta">
+                <span class="meta-badge">source: system</span>
+                <span class="meta-badge">chunk: -</span>
+                <span class="meta-badge">score: -</span>
+              </div>
+            </div>
+            <span class="meta-badge">点击折叠</span>
+          </summary>
+          <div class="evidence-body">
+            在用户尚未提交提示词前，此区域用于说明“优化依据”的展示方式。实际接入后，这里会显示命中的提示词知识、来源文档、chunk 序号、相似度以及参考片段。
+          </div>
+        </details>
+      `;
+    }
+
+    function setLoadingState(){
+      answerBox.textContent = '正在检索提示词知识库并生成优化后的提示词，请稍候...';
+      notesBox.textContent = '系统正在分析原始提示词的主题、场景、风格和优化目标。';
+      setBannerState('status-info', '加载态：系统正在执行提示词检索增强与优化生成。');
+      sourceTags.innerHTML = '<span class="tag">检索中</span><span class="tag">优化中</span>';
+      evidenceList.innerHTML = `
+        <details class="evidence-item" open>
+          <summary>
+            <div>
+              <strong>优化处理中</strong>
+              <div class="evidence-meta">
+                <span class="meta-badge">source: pending</span>
+                <span class="meta-badge">chunk: -</span>
+                <span class="meta-badge">score: -</span>
+              </div>
+            </div>
+            <span class="meta-badge">loading</span>
+          </summary>
+          <div class="evidence-body">系统正在召回相关提示词知识片段，完成后将在此显示命中的优化依据。</div>
+        </details>
+      `;
+      systemMsg.textContent = '当前为加载态，后端正在执行检索与优化生成。';
+    }
+
+    function normalizeErrorMessage(detail) {
+      if (!detail) {
+        return '请求失败，请稍后重试。';
+      }
+      if (typeof detail === 'string') {
+        return detail;
+      }
+      return JSON.stringify(detail);
+    }
+
+    async function loadStatus(message = '') {
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(normalizeErrorMessage(data.detail));
+        }
+
+        modelPill.textContent = `模型：${data.deepseek_model}`;
+        kbPill.textContent = `知识库：${data.document_count > 0 ? '提示词资料已加载' : '暂无资料'}`;
+        vectorPill.textContent = `向量库：${data.vector_db_type} / ${data.vector_error ? 'Error' : data.vector_count}`;
+        kbStatusValue.textContent = data.vector_error ? '异常' : (data.document_count > 0 ? '已就绪' : '暂无资料');
+        docCountValue.textContent = `${data.document_count} 份提示词资料`;
+        vectorStoreValue.textContent = data.vector_error
+          ? `${data.vector_db_type} / error`
+          : `${data.vector_db_type} / ${data.vector_count} chunks`;
+        modelConfigValue.textContent = `${data.deepseek_model} · TopK=${data.top_k} · Temp=${data.temperature}`;
+
+        if (data.vector_error) {
+          setBannerState('status-error', `知识库状态异常：${data.vector_error}`);
+        } else if (!data.has_api_key) {
+          setBannerState('status-error', '未检测到 DeepSeek API Key，当前无法执行真实优化。');
+        } else if (message) {
+          setBannerState('status-success', message);
+        }
+      } catch (error) {
+        setBannerState('status-error', `状态加载失败：${error.message}`);
+        kbStatusValue.textContent = '加载失败';
+        vectorStoreValue.textContent = '加载失败';
+      }
+    }
+
+    askBtn.addEventListener('click', async () => {
+      const value = questionInput.value.trim();
+      const goal = goalInput.value.trim();
+      const platform = platformSelect.value;
+      const style = styleInput.value.trim();
+      if (!value) {
+        setBannerState('status-error', '错误态：请输入原始提示词后再开始优化。');
+        answerBox.innerHTML = '<span class="answer-placeholder">尚未检测到有效提示词输入。</span>';
+        notesBox.innerHTML = '<span class="answer-placeholder">请先提供原始提示词，再生成优化说明。</span>';
+        sourceTags.innerHTML = '<span class="tag">输入为空</span>';
+        systemMsg.textContent = '系统消息：当前未接收到有效提示词，无法启动检索增强与优化生成流程。';
+        return;
+      }
+
+      setLoadingState();
+
+      try {
+        const response = await fetch('/api/optimize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            raw_prompt: value,
+            platform,
+            style,
+            goal
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(normalizeErrorMessage(data.detail));
+        }
+
+        answerBox.textContent = data.optimized_prompt || '';
+        notesBox.textContent = Array.isArray(data.notes) ? data.notes.join('\n') : String(data.notes || '');
+        renderSources(data.sources || []);
+        renderEvidence(data.retrieved_chunks || []);
+
+        if ((data.retrieved_chunks || []).length === 0) {
+          setBannerState('status-info', '空结果态：知识库没有命中相关片段，当前返回保守优化结果。');
+        } else {
+          setBannerState('status-success', '成功态：已完成提示词检索增强与优化输出。');
+        }
+
+        systemMsg.textContent = `最近一次优化任务：平台=${platform}；风格=${style || '未指定'}；优化目标=${goal || '提升提示词质量'}；原始提示词=${value}`;
+      } catch (error) {
+        setBannerState('status-error', `优化失败：${error.message}`);
+        answerBox.innerHTML = '<span class="answer-placeholder">后端调用失败，当前未返回优化结果。</span>';
+        notesBox.innerHTML = '<span class="answer-placeholder">请检查 API Key、知识库和后端服务状态。</span>';
+        sourceTags.innerHTML = '<span class="tag">请求失败</span>';
+        renderEvidence([]);
+        systemMsg.textContent = `后端错误：${error.message}`;
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      questionInput.value = '';
+      goalInput.value = '';
+      styleInput.value = '';
+      platformSelect.value = '通用';
+      setDefaultState();
+      systemMsg.textContent = '当前页面已重置为默认态。';
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+      setBannerState('status-info', '系统消息：正在构建或刷新提示词知识库...');
+      systemMsg.textContent = '已触发真实后端操作：构建/刷新提示词知识库。';
+
+      try {
+        const response = await fetch('/api/rebuild-kb', { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(normalizeErrorMessage(data.detail));
+        }
+
+        await loadStatus(data.message || '知识库已刷新。');
+        systemMsg.textContent = `知识库刷新完成：documents=${data.summary.documents_loaded}，chunks=${data.summary.chunks_indexed}`;
+      } catch (error) {
+        setBannerState('status-error', `知识库刷新失败：${error.message}`);
+        systemMsg.textContent = `知识库刷新失败：${error.message}`;
+      }
+    });
+
+    document.querySelectorAll('.example').forEach(btn => {
+      btn.addEventListener('click', () => {
+        questionInput.value = btn.textContent.trim();
+      });
+    });
+
+    setDefaultState();
+    loadStatus();
+  </script>
+</body>
+</html>

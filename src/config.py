@@ -101,7 +101,7 @@ class Settings:
             chunk_size=_to_int(read("CHUNK_SIZE"), 400),
             chunk_overlap=_to_int(read("CHUNK_OVERLAP"), 80),
             temperature=_to_float(read("TEMPERATURE"), 0.2),
-            max_docs=_to_int(read("MAX_DOCS"), 5),
+            max_docs=_to_int(read("MAX_DOCS"), 200),
         )
 
     def as_dict(self) -> dict[str, object]:

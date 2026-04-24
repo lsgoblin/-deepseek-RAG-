@@ -1,18 +1,9 @@
 # deployment-model-v2
 
-基于 DeepSeek 的 RAG 信息检索系统项目骨架。
-
+基于 DeepSeek 的 RAG 信息检索系统 + 面向 AI 生成图片提示词优化的应用场景
+底层：用 DeepSeek + RAG 做信息检索与知识增强
+上层：做一个帮助用户优化 AI 生图提示词的网站
 ## 当前状态
-
-当前仓库已完成初始化，不包含业务实现代码。
-
-已创建内容：
-
-- 项目目录结构
-- 依赖清单 `requirements.txt`
-- 环境变量模板 `.env.example`
-- 源码占位模块
-- 输出与向量库存储目录
 
 ## 目录结构
 
@@ -45,10 +36,4 @@ deployment-model-v2/
 └─ 项目计划.md
 ```
 
-## 后续建议顺序
-
-1. 完成 `src/config.py` 中的配置读取实现。
-2. 实现文档加载与文本切分模块。
-3. 接入 embedding、向量库、检索与 DeepSeek 调用。
-4. 串联 CLI 和对比实验流程。
 
