@@ -42,6 +42,12 @@ htmlcov/
 /outputs/experiment_results/*
 !/outputs/experiment_results/.gitkeep
 
+/ai_deliverables/*
+!/ai_deliverables/.gitkeep
+
+/reports/*
+!/reports/.gitkeep
+
 # If you do not want to upload demo screenshots, uncomment these lines:
 # /outputs/screenshots/*
 # !/outputs/screenshots/.gitkeep
