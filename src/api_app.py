@@ -17,13 +17,13 @@ try:
     from src.build_vector_store import build_vector_store_summary
     from src.config import get_settings
     from src.loaders import discover_documents
-    from src.prompt_optimizer import optimize_prompt
+    from src.prompt_optimizer import DEFAULT_PLATFORM, optimize_prompt
     from src.vectordb import load_vector_store
 except ModuleNotFoundError:  # pragma: no cover - script execution fallback
     from build_vector_store import build_vector_store_summary
     from config import get_settings
     from loaders import discover_documents
-    from prompt_optimizer import optimize_prompt
+    from prompt_optimizer import DEFAULT_PLATFORM, optimize_prompt
     from vectordb import load_vector_store
 
 
@@ -40,7 +40,7 @@ class OptimizeRequest(BaseModel):
     """Request payload for prompt optimization."""
 
     raw_prompt: str = Field(..., min_length=1)
-    platform: str = Field(default="通用")
+    platform: str = Field(default=DEFAULT_PLATFORM)
     style: str = Field(default="")
     goal: str = Field(default="")
 

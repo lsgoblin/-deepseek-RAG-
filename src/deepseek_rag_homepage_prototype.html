@@ -5,798 +5,786 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 生图提示词优化平台</title>
   <style>
-    :root{
-      --bg:#F6F8FB;
-      --card:#FFFFFF;
-      --primary:#1565C0;
-      --success:#0F9D58;
-      --danger:#D93025;
-      --text:#1F2937;
-      --muted:#6B7280;
-      --border:#E5E7EB;
-      --shadow:0 10px 30px rgba(15, 23, 42, 0.06);
-      --radius:12px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:"Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .app{
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-    }
-    .topbar{
-      background:rgba(255,255,255,0.88);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--border);
-      padding:18px 28px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      position:sticky;
-      top:0;
-      z-index:10;
-    }
-    .brand{
-      display:flex;
-      align-items:flex-start;
-      gap:14px;
-    }
-    .logo{
-      width:42px;
-      height:42px;
-      border-radius:10px;
-      background:linear-gradient(135deg,#1565C0,#5AA2FF);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:700;
-      letter-spacing:.5px;
-      box-shadow:var(--shadow);
-      flex-shrink:0;
-    }
-    .brand h1{
-      margin:0;
-      font-size:22px;
-      line-height:1.2;
-    }
-    .brand p{
-      margin:6px 0 0;
-      color:var(--muted);
-      font-size:14px;
-    }
-    .top-status{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:var(--text);
-      padding:8px 12px;
-      background:#fff;
-      border:1px solid var(--border);
-      border-radius:999px;
-    }
-    .dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:var(--success);
+    :root {
+      --bg: #f4efe7;
+      --panel: rgba(255, 255, 255, 0.82);
+      --card: rgba(255, 255, 255, 0.92);
+      --ink: #1f2933;
+      --muted: #5c6b73;
+      --line: rgba(31, 41, 51, 0.08);
+      --accent: #b44d2a;
+      --accent-soft: #ffd7c8;
+      --secondary: #14532d;
+      --secondary-soft: #d8f5df;
+      --danger: #a12f2f;
+      --shadow: 0 24px 60px rgba(59, 39, 19, 0.12);
+      --radius: 22px;
     }
 
-    .layout{
-      width:min(1400px, calc(100% - 32px));
-      margin:20px auto;
-      display:grid;
-      grid-template-columns:290px 1fr;
-      gap:20px;
-      align-items:start;
+    * {
+      box-sizing: border-box;
     }
 
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(244, 160, 110, 0.22), transparent 34%),
+        radial-gradient(circle at right 20%, rgba(39, 112, 78, 0.16), transparent 28%),
+        linear-gradient(180deg, #f7f1e8 0%, #efe6da 100%);
+      min-height: 100vh;
     }
 
-    .sidebar{
-      padding:18px;
-      position:sticky;
-      top:94px;
-    }
-    .sidebar h2,
-    .main h2{
-      margin:0 0 14px;
-      font-size:18px;
-    }
-    .section-title{
-      font-size:13px;
-      color:var(--muted);
-      margin:16px 0 10px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-    }
-    .info-list{
-      display:grid;
-      gap:10px;
-    }
-    .info-item{
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:12px;
-      background:#FBFCFE;
-    }
-    .info-item .label{
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:6px;
-    }
-    .info-item .value{
-      font-size:15px;
-      font-weight:600;
-    }
-    .button{
-      appearance:none;
-      border:none;
-      cursor:pointer;
-      border-radius:10px;
-      padding:12px 16px;
-      font-size:14px;
-      font-weight:600;
-      transition:.2s ease;
-    }
-    .button:hover{transform:translateY(-1px)}
-    .button-primary{
-      color:#fff;
-      background:var(--primary);
-    }
-    .button-secondary{
-      color:var(--text);
-      background:#EEF3FA;
-      border:1px solid #D9E5F5;
-    }
-    .button-ghost{
-      color:var(--primary);
-      background:#F4F8FE;
-      border:1px dashed #BFD4F4;
-      width:100%;
-      margin-top:14px;
-    }
-    .example-list{
-      display:grid;
-      gap:8px;
-      margin-top:6px;
-    }
-    .example{
-      padding:10px 12px;
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#fff;
-      color:#334155;
-      font-size:13px;
-      cursor:pointer;
+    .shell {
+      width: min(1420px, calc(100% - 28px));
+      margin: 16px auto 28px;
     }
 
-    .main{
-      display:grid;
-      gap:18px;
-    }
-    .hero-card{
-      padding:20px;
-    }
-    .hero-card h2{
-      margin-bottom:8px;
-    }
-    .hero-card p{
-      margin:0 0 16px;
-      color:var(--muted);
-      font-size:14px;
-    }
-    .form-grid{
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0, 1fr));
-      gap:14px;
-      margin-bottom:14px;
-    }
-    .field{
-      display:grid;
-      gap:8px;
-    }
-    .field label{
-      font-size:13px;
-      color:var(--muted);
-      font-weight:600;
-    }
-    input[type="text"],
-    select{
-      width:100%;
-      height:46px;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:0 14px;
-      font:inherit;
-      color:var(--text);
-      background:#fff;
-      outline:none;
-      transition:border-color .2s ease, box-shadow .2s ease;
-    }
-    textarea{
-      width:100%;
-      min-height:132px;
-      resize:vertical;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:14px 16px;
-      font:inherit;
-      outline:none;
-      background:#fff;
-      transition:border-color .2s ease, box-shadow .2s ease;
-    }
-    textarea:focus{
-      border-color:#9EC1F0;
-      box-shadow:0 0 0 4px rgba(21,101,192,.08);
-    }
-    input[type="text"]:focus,
-    select:focus{
-      border-color:#9EC1F0;
-      box-shadow:0 0 0 4px rgba(21,101,192,.08);
-    }
-    .actions{
-      display:flex;
-      gap:12px;
-      margin-top:14px;
-      flex-wrap:wrap;
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 18px;
+      margin-bottom: 18px;
     }
 
-    .answer-card, .evidence-card, .message-card{
-      padding:20px;
-    }
-    .label-row{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-bottom:14px;
-    }
-    .source-tags{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .tag{
-      display:inline-flex;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      background:#EEF5FF;
-      color:#174EA6;
-      border:1px solid #D1E2FF;
-    }
-    .answer-box{
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:16px;
-      background:#FCFDFE;
-      line-height:1.75;
-      min-height:160px;
-      white-space:pre-wrap;
-    }
-    .answer-placeholder{
-      color:var(--muted);
-    }
-    .subsection-title{
-      margin:16px 0 10px;
-      font-size:13px;
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:.08em;
-    }
-    .status-banner{
-      margin-top:14px;
-      padding:12px 14px;
-      border-radius:10px;
-      font-size:14px;
-      border:1px solid transparent;
-    }
-    .status-info{
-      background:#F4F8FE;
-      border-color:#D8E6FA;
-      color:#24528A;
-    }
-    .status-success{
-      background:#F1FBF5;
-      border-color:#C7EED5;
-      color:#17653D;
-    }
-    .status-error{
-      background:#FEF2F2;
-      border-color:#F7CACA;
-      color:#991B1B;
+    .hero-card,
+    .summary-card,
+    .panel,
+    .result-card,
+    .chunk-card {
+      backdrop-filter: blur(14px);
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
 
-    .evidence-list{
-      display:grid;
-      gap:14px;
-    }
-    details.evidence-item{
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:0;
-      overflow:hidden;
-      background:#fff;
-    }
-    details.evidence-item summary{
-      list-style:none;
-      cursor:pointer;
-      padding:14px 16px;
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-    }
-    details.evidence-item summary::-webkit-details-marker{display:none}
-    .evidence-meta{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:8px;
-    }
-    .meta-badge{
-      font-size:12px;
-      padding:5px 8px;
-      border-radius:999px;
-      background:#F8FAFC;
-      border:1px solid var(--border);
-      color:#475569;
-    }
-    .evidence-body{
-      border-top:1px solid var(--border);
-      padding:16px;
-      color:#334155;
-      line-height:1.7;
-      background:#FBFCFE;
-    }
-    .system-msg{
-      color:var(--muted);
-      line-height:1.7;
-      font-size:14px;
+    .hero-card {
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
     }
 
-    @media (max-width: 980px){
-      .layout{
-        grid-template-columns:1fr;
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -25% auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(180, 77, 42, 0.24), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(30px, 4vw, 50px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .hero-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .metric {
+      min-width: 160px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.82);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 22px;
+      margin-top: 6px;
+    }
+
+    .summary-card {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .summary-card h2,
+    .panel h2,
+    .result-card h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .status-item {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.64);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .status-item span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel,
+    .result-card {
+      padding: 22px;
+    }
+
+    .side-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .doc-pill,
+    .source-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(20, 83, 45, 0.08);
+      color: var(--secondary);
+      border: 1px solid rgba(20, 83, 45, 0.08);
+      font-size: 13px;
+      margin: 0 8px 8px 0;
+    }
+
+    .side-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .button,
+    button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .button-primary {
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #b44d2a, #db7c42);
+      color: #fff;
+      box-shadow: 0 18px 30px rgba(180, 77, 42, 0.22);
+    }
+
+    .button-secondary {
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--ink);
+      padding: 14px 16px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(180, 77, 42, 0.55);
+      box-shadow: 0 0 0 4px rgba(180, 77, 42, 0.08);
+    }
+
+    textarea {
+      min-height: 148px;
+      resize: vertical;
+      margin-top: 14px;
+      line-height: 1.7;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .sample-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .sample-chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #6f2812;
+      border: 1px solid rgba(180, 77, 42, 0.12);
+      font-size: 13px;
+    }
+
+    .result-stack {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .result-card {
+      background: var(--card);
+    }
+
+    .result-block {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(180, 77, 42, 0.05);
+      border: 1px solid rgba(180, 77, 42, 0.08);
+      white-space: pre-wrap;
+      line-height: 1.75;
+    }
+
+    .note-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .note-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(20, 83, 45, 0.06);
+      color: var(--secondary);
+    }
+
+    .chunk-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .chunk-card {
+      padding: 18px;
+      background: var(--card);
+    }
+
+    .chunk-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .chunk-card pre {
+      margin: 0;
+      font-family: "IBM Plex Mono", "Cascadia Code", monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .banner {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      line-height: 1.6;
+    }
+
+    .banner.show {
+      display: block;
+    }
+
+    .banner.info {
+      background: rgba(20, 83, 45, 0.08);
+      color: var(--secondary);
+    }
+
+    .banner.error {
+      background: rgba(161, 47, 47, 0.08);
+      color: var(--danger);
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1080px) {
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
       }
-      .form-grid{
-        grid-template-columns:1fr;
+
+      .summary-card,
+      .panel {
+        position: static;
       }
-      .sidebar{
-        position:static;
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        width: min(100% - 18px, 100%);
+      }
+
+      .hero-card,
+      .summary-card,
+      .panel,
+      .result-card,
+      .chunk-card {
+        border-radius: 18px;
+      }
+
+      .form-grid,
+      .status-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">RAG</div>
-        <div>
-          <h1>AI 生图提示词优化平台</h1>
-          <p>基于 DeepSeek + RAG 的提示词检索增强与优化生成原型</p>
-        </div>
-      </div>
-      <div class="top-status">
-        <div class="pill"><span class="dot"></span><span id="modelPill">模型：DeepSeek</span></div>
-        <div class="pill"><span class="dot"></span><span id="kbPill">知识库：状态未知</span></div>
-        <div class="pill" id="vectorPill">向量库：状态未知</div>
-      </div>
-    </header>
-
-    <main class="layout">
-      <aside class="card sidebar">
-        <h2>系统状态</h2>
-
-        <div class="info-list">
-          <div class="info-item">
-            <div class="label">提示词知识库状态</div>
-            <div class="value" id="kbStatusValue">检测中</div>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">DeepSeek + RAG + Prompt Optimization</div>
+        <h1>把原始提示词<br />变成可直接出图的结果</h1>
+        <p>
+          这个页面用于课程项目最终演示。输入原始生图提示词后，系统会先检索本地知识库，再结合 DeepSeek
+          生成更完整、更可控、可追溯的优化结果，并展示来源片段。
+        </p>
+        <div class="hero-metrics">
+          <div class="metric">
+            <span>当前知识库文档</span>
+            <strong id="metric-docs">--</strong>
           </div>
-          <div class="info-item">
-            <div class="label">已加载资料数量</div>
-            <div class="value" id="docCountValue">检测中</div>
+          <div class="metric">
+            <span>当前索引片段</span>
+            <strong id="metric-chunks">--</strong>
           </div>
-          <div class="info-item">
-            <div class="label">当前向量库</div>
-            <div class="value" id="vectorStoreValue">检测中</div>
-          </div>
-          <div class="info-item">
-            <div class="label">模型与参数</div>
-            <div class="value" id="modelConfigValue">检测中</div>
+          <div class="metric">
+            <span>默认检索 Top-K</span>
+            <strong id="metric-topk">--</strong>
           </div>
         </div>
+      </div>
 
-        <button class="button button-ghost" id="refreshBtn">构建 / 刷新知识库</button>
+      <aside class="summary-card">
+        <h2>运行状态</h2>
+        <div class="status-grid">
+          <div class="status-item">
+            <span>API Key</span>
+            <strong id="api-key-status">检测中</strong>
+          </div>
+          <div class="status-item">
+            <span>DeepSeek 模型</span>
+            <strong id="model-name">--</strong>
+          </div>
+          <div class="status-item">
+            <span>Embedding 模型</span>
+            <strong id="embedding-name">--</strong>
+          </div>
+          <div class="status-item">
+            <span>向量库类型</span>
+            <strong id="db-type">--</strong>
+          </div>
+        </div>
+        <div class="footer-note">
+          建议截图内容：默认状态、成功优化后的结果卡片、来源区域、检索片段区域。
+        </div>
+      </aside>
+    </section>
 
-        <div class="section-title">示例提示词</div>
-        <div class="example-list">
-          <button class="example">赛博朋克少女，雨夜街头，霓虹灯反射，电影感</button>
-          <button class="example">国风仙侠人物，云海，长发飘逸，细节丰富</button>
-          <button class="example">香水产品海报，极简高级感，柔光摄影，白色背景</button>
+    <section class="layout">
+      <aside class="panel">
+        <h2>知识库概览</h2>
+        <div class="side-list" id="document-list"></div>
+        <div class="side-actions">
+          <button class="button button-primary" id="refresh-kb-btn">构建 / 刷新知识库</button>
+          <button class="button button-secondary" id="refresh-status-btn">刷新状态</button>
+        </div>
+        <div class="footer-note" id="path-note">
+          当前会话将展示知识库文档列表、向量库片段数和模型配置，便于课程答辩说明系统链路。
         </div>
       </aside>
 
-      <section class="main">
-        <section class="card hero-card">
-          <h2>提示词优化工作台</h2>
-          <p>输入原始生图提示词，系统将执行“检索提示词知识库 → 优化表达 → 输出可直接使用的提示词”的完整流程。</p>
-          <div class="form-grid">
-            <div class="field">
-              <label for="platformSelect">目标平台</label>
-              <select id="platformSelect">
-                <option value="通用">通用模型</option>
-                <option value="Midjourney">Midjourney</option>
-                <option value="即梦">即梦</option>
-                <option value="OpenAI Images">OpenAI Images</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="styleInput">风格偏好</label>
-              <input id="styleInput" type="text" placeholder="例如：电影感 / 国风 / 商业产品摄影" />
-            </div>
+      <main class="panel">
+        <h2>提示词优化主流程</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="platform">目标平台</label>
+            <input id="platform" value="通用" />
           </div>
           <div class="field">
-            <label for="questionInput">原始提示词</label>
-            <textarea id="questionInput" placeholder="例如：赛博朋克少女，雨夜街头，霓虹灯反射，电影感"></textarea>
+            <label for="style">风格偏好</label>
+            <input id="style" value="商业摄影，极简高级" />
           </div>
           <div class="field">
-            <label for="goalInput">优化目标</label>
-            <input id="goalInput" type="text" placeholder="例如：增强画面层次、提升镜头语言、补足光影和材质描述" />
+            <label for="goal">优化目标</label>
+            <input id="goal" value="突出材质、品牌感和广告构图" />
           </div>
-          <div class="actions">
-            <button class="button button-primary" id="askBtn">开始优化</button>
-            <button class="button button-secondary" id="clearBtn">清空</button>
-          </div>
-        </section>
+        </div>
 
-        <section class="card answer-card">
-          <div class="label-row">
+        <label for="raw-prompt" style="display:block; margin-top:14px;">原始提示词</label>
+        <textarea id="raw-prompt">一款高端香水的广告海报</textarea>
+
+        <div class="form-actions">
+          <button class="button button-primary" id="optimize-btn">开始优化</button>
+          <button class="button button-secondary" id="clear-btn">清空输入</button>
+        </div>
+
+        <div class="sample-row">
+          <button class="button sample-chip" data-sample="赛博朋克女战士站在雨夜街头|即梦|电影感，霓虹，高细节|增强人物造型、场景氛围和镜头语言">人物类样例</button>
+          <button class="button sample-chip" data-sample="清晨云海中的古风山寺|Midjourney|东方美学，空灵，层次丰富|强化空间层次、光影和环境细节">场景类样例</button>
+          <button class="button sample-chip" data-sample="一款高端香水的广告海报|通用|商业摄影，极简高级|突出材质、品牌感和广告构图">海报类样例</button>
+        </div>
+
+        <div class="banner info show" id="message-banner">
+          输入原始提示词后点击“开始优化”，系统会返回优化后的提示词、说明、来源和检索片段。
+        </div>
+
+        <div class="result-stack">
+          <section class="result-card">
             <h2>优化结果</h2>
-            <div class="source-tags" id="sourceTags">
-              <span class="tag">等待优化</span>
-            </div>
-          </div>
-          <div class="subsection-title">优化后提示词</div>
-          <div class="answer-box" id="answerBox">
-            <span class="answer-placeholder">这里将展示优化后的提示词，可直接用于 AI 生图模型。</span>
-          </div>
-          <div class="subsection-title">优化说明</div>
-          <div class="answer-box" id="notesBox">
-            <span class="answer-placeholder">这里将解释系统如何补充风格、镜头、光影、材质和构图等描述。</span>
-          </div>
-          <div class="status-banner status-info" id="statusBanner">系统已准备就绪。你可以输入原始提示词开始优化演示。</div>
-        </section>
+            <div class="result-block" id="optimized-result">结果将在这里显示。</div>
+          </section>
 
-        <section class="card evidence-card">
-          <div class="label-row">
-            <h2>优化依据</h2>
-            <div class="source-tags">
-              <span class="tag">RAG 检索证据展示</span>
+          <section class="result-card">
+            <h2>优化说明</h2>
+            <div class="note-list" id="notes-list">
+              <div class="note-item">系统会说明补充了哪些结构化维度，例如主体、材质、镜头、构图和光线。</div>
             </div>
-          </div>
-          <div class="evidence-list" id="evidenceList">
-            <details class="evidence-item" open>
-              <summary>
-                <div>
-                  <strong>默认状态说明</strong>
-                  <div class="evidence-meta">
-                    <span class="meta-badge">source: system</span>
-                    <span class="meta-badge">chunk: -</span>
-                    <span class="meta-badge">score: -</span>
-                  </div>
+          </section>
+
+          <section class="result-card">
+            <h2>来源文档</h2>
+            <div id="sources-list">
+              <span class="source-pill">等待一次成功优化</span>
+            </div>
+          </section>
+
+          <section class="result-card">
+            <h2>检索证据</h2>
+            <div class="chunk-grid" id="chunks-list">
+              <div class="chunk-card">
+                <div class="chunk-head">
+                  <span>Top-K 检索片段将在这里展示</span>
+                  <span>便于截图与实验分析</span>
                 </div>
-                <span class="meta-badge">点击折叠</span>
-              </summary>
-              <div class="evidence-body">
-                在用户尚未提交提示词前，此区域用于说明“优化依据”的展示方式。实际接入后，这里会显示命中的提示词知识、来源文档、chunk 序号、相似度以及参考片段。
+                <pre>每个片段会展示来源文档、相似度和片段正文。</pre>
               </div>
-            </details>
-          </div>
-        </section>
-
-        <section class="card message-card">
-          <h2>系统消息</h2>
-          <div class="system-msg" id="systemMsg">
-            当前页面为“AI 生图提示词优化网站”静态原型，已预留默认态、加载态、成功态、空结果态与错误态的界面位置。
-          </div>
-        </section>
-      </section>
-    </main>
+            </div>
+          </section>
+        </div>
+      </main>
+    </section>
   </div>
 
   <script>
-    const questionInput = document.getElementById('questionInput');
-    const askBtn = document.getElementById('askBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const platformSelect = document.getElementById('platformSelect');
-    const styleInput = document.getElementById('styleInput');
-    const goalInput = document.getElementById('goalInput');
-    const answerBox = document.getElementById('answerBox');
-    const notesBox = document.getElementById('notesBox');
-    const statusBanner = document.getElementById('statusBanner');
-    const sourceTags = document.getElementById('sourceTags');
-    const evidenceList = document.getElementById('evidenceList');
-    const systemMsg = document.getElementById('systemMsg');
-    const modelPill = document.getElementById('modelPill');
-    const kbPill = document.getElementById('kbPill');
-    const vectorPill = document.getElementById('vectorPill');
-    const kbStatusValue = document.getElementById('kbStatusValue');
-    const docCountValue = document.getElementById('docCountValue');
-    const vectorStoreValue = document.getElementById('vectorStoreValue');
-    const modelConfigValue = document.getElementById('modelConfigValue');
+    const statusUrl = "/api/status";
+    const optimizeUrl = "/api/optimize";
+    const rebuildUrl = "/api/rebuild-kb";
+    const samplePresets = {
+      character: {
+        rawPrompt: "赛博朋克女战士站在雨夜街头",
+        platform: "即梦",
+        style: "电影感，霓虹，高细节",
+        goal: "增强人物造型、场景氛围和镜头语言",
+      },
+      scene: {
+        rawPrompt: "清晨云海中的古风山寺",
+        platform: "Midjourney",
+        style: "东方美学，空灵，层次丰富",
+        goal: "强化空间层次、光影和环境细节",
+      },
+      poster: {
+        rawPrompt: "一款高端香水的广告海报",
+        platform: "通用",
+        style: "商业摄影，极简高级",
+        goal: "突出材质、品牌感和广告构图",
+      },
+    };
 
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
+    const messageBanner = document.getElementById("message-banner");
+    const optimizeBtn = document.getElementById("optimize-btn");
+    const refreshKbBtn = document.getElementById("refresh-kb-btn");
+    const refreshStatusBtn = document.getElementById("refresh-status-btn");
+
+    function setBanner(type, text) {
+      messageBanner.className = `banner ${type} show`;
+      messageBanner.textContent = text;
     }
 
-    function renderSources(items){
-      if (!items || items.length === 0) {
-        sourceTags.innerHTML = '<span class="tag">未返回来源</span>';
-        return;
-      }
-      sourceTags.innerHTML = items.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('');
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
     }
 
-    function renderEvidence(items){
-      if (!items || items.length === 0) {
-        evidenceList.innerHTML = `
-          <details class="evidence-item" open>
-            <summary>
-              <div>
-                <strong>未命中相关知识片段</strong>
-                <div class="evidence-meta">
-                  <span class="meta-badge">source: none</span>
-                  <span class="meta-badge">chunk: -</span>
-                  <span class="meta-badge">score: -</span>
-                </div>
-              </div>
-              <span class="meta-badge">empty</span>
-            </summary>
-            <div class="evidence-body">当前没有检索到可用于优化的提示词知识，请检查知识库内容或尝试更具体的原始提示词。</div>
-          </details>
-        `;
-        return;
-      }
-
-      evidenceList.innerHTML = items.map((item, index) => {
-        const score = typeof item.score === 'number' ? item.score.toFixed(4) : '未知';
-        const title = `${item.source || 'unknown'} / chunk ${item.chunk_index ?? '-'}`;
-        return `
-          <details class="evidence-item" ${index === 0 ? 'open' : ''}>
-            <summary>
-              <div>
-                <strong>${escapeHtml(title)}</strong>
-                <div class="evidence-meta">
-                  <span class="meta-badge">source: ${escapeHtml(item.source || 'unknown')}</span>
-                  <span class="meta-badge">chunk: ${escapeHtml(item.chunk_index ?? '-')}</span>
-                  <span class="meta-badge">score: ${escapeHtml(score)}</span>
-                </div>
-              </div>
-              <span class="meta-badge">${index === 0 ? '重点命中' : '相关片段'}</span>
-            </summary>
-            <div class="evidence-body">${escapeHtml(item.text || '')}</div>
-          </details>
-        `;
-      }).join('');
-    }
-
-    function setBannerState(type, message) {
-      statusBanner.className = `status-banner ${type}`;
-      statusBanner.textContent = message;
-    }
-
-    function setDefaultState() {
-      answerBox.innerHTML = '<span class="answer-placeholder">这里将展示优化后的提示词，可直接用于 AI 生图模型。</span>';
-      notesBox.innerHTML = '<span class="answer-placeholder">这里将解释系统如何补充风格、镜头、光影、材质和构图等描述。</span>';
-      setBannerState('status-info', '系统已准备就绪。你可以输入原始提示词开始优化演示。');
-      sourceTags.innerHTML = '<span class="tag">等待优化</span>';
-      evidenceList.innerHTML = `
-        <details class="evidence-item" open>
-          <summary>
-            <div>
-              <strong>默认状态说明</strong>
-              <div class="evidence-meta">
-                <span class="meta-badge">source: system</span>
-                <span class="meta-badge">chunk: -</span>
-                <span class="meta-badge">score: -</span>
-              </div>
-            </div>
-            <span class="meta-badge">点击折叠</span>
-          </summary>
-          <div class="evidence-body">
-            在用户尚未提交提示词前，此区域用于说明“优化依据”的展示方式。实际接入后，这里会显示命中的提示词知识、来源文档、chunk 序号、相似度以及参考片段。
-          </div>
-        </details>
-      `;
-    }
-
-    function setLoadingState(){
-      answerBox.textContent = '正在检索提示词知识库并生成优化后的提示词，请稍候...';
-      notesBox.textContent = '系统正在分析原始提示词的主题、场景、风格和优化目标。';
-      setBannerState('status-info', '加载态：系统正在执行提示词检索增强与优化生成。');
-      sourceTags.innerHTML = '<span class="tag">检索中</span><span class="tag">优化中</span>';
-      evidenceList.innerHTML = `
-        <details class="evidence-item" open>
-          <summary>
-            <div>
-              <strong>优化处理中</strong>
-              <div class="evidence-meta">
-                <span class="meta-badge">source: pending</span>
-                <span class="meta-badge">chunk: -</span>
-                <span class="meta-badge">score: -</span>
-              </div>
-            </div>
-            <span class="meta-badge">loading</span>
-          </summary>
-          <div class="evidence-body">系统正在召回相关提示词知识片段，完成后将在此显示命中的优化依据。</div>
-        </details>
-      `;
-      systemMsg.textContent = '当前为加载态，后端正在执行检索与优化生成。';
-    }
-
-    function normalizeErrorMessage(detail) {
-      if (!detail) {
-        return '请求失败，请稍后重试。';
-      }
-      if (typeof detail === 'string') {
-        return detail;
-      }
-      return JSON.stringify(detail);
-    }
-
-    async function loadStatus(message = '') {
+    async function loadStatus() {
+      setBanner("info", "正在获取运行状态...");
       try {
-        const response = await fetch('/api/status');
-        const data = await response.json();
+        const response = await fetch(statusUrl);
+        const payload = await response.json();
         if (!response.ok) {
-          throw new Error(normalizeErrorMessage(data.detail));
+          throw new Error(payload.detail || "状态接口请求失败");
         }
 
-        modelPill.textContent = `模型：${data.deepseek_model}`;
-        kbPill.textContent = `知识库：${data.document_count > 0 ? '提示词资料已加载' : '暂无资料'}`;
-        vectorPill.textContent = `向量库：${data.vector_db_type} / ${data.vector_error ? 'Error' : data.vector_count}`;
-        kbStatusValue.textContent = data.vector_error ? '异常' : (data.document_count > 0 ? '已就绪' : '暂无资料');
-        docCountValue.textContent = `${data.document_count} 份提示词资料`;
-        vectorStoreValue.textContent = data.vector_error
-          ? `${data.vector_db_type} / error`
-          : `${data.vector_db_type} / ${data.vector_count} chunks`;
-        modelConfigValue.textContent = `${data.deepseek_model} · TopK=${data.top_k} · Temp=${data.temperature}`;
+        document.getElementById("metric-docs").textContent = payload.document_count;
+        document.getElementById("metric-chunks").textContent = payload.vector_count;
+        document.getElementById("metric-topk").textContent = payload.top_k;
+        document.getElementById("api-key-status").textContent = payload.has_api_key ? "已配置" : "未配置";
+        document.getElementById("model-name").textContent = payload.deepseek_model;
+        document.getElementById("embedding-name").textContent = payload.embedding_model;
+        document.getElementById("db-type").textContent = payload.vector_db_type;
 
-        if (data.vector_error) {
-          setBannerState('status-error', `知识库状态异常：${data.vector_error}`);
-        } else if (!data.has_api_key) {
-          setBannerState('status-error', '未检测到 DeepSeek API Key，当前无法执行真实优化。');
-        } else if (message) {
-          setBannerState('status-success', message);
-        }
+        const docs = payload.documents || [];
+        const docList = document.getElementById("document-list");
+        docList.innerHTML = docs.length
+          ? docs.map((doc) => `<span class="doc-pill">${escapeHtml(doc)}</span>`).join("")
+          : '<span class="doc-pill">未发现可用知识库文档</span>';
+
+        document.getElementById("path-note").textContent =
+          `数据目录：${payload.data_dir} | 向量库目录：${payload.vector_db_dir}`;
+
+        setBanner("info", "状态已刷新，可以开始优化提示词。");
       } catch (error) {
-        setBannerState('status-error', `状态加载失败：${error.message}`);
-        kbStatusValue.textContent = '加载失败';
-        vectorStoreValue.textContent = '加载失败';
+        setBanner("error", `状态读取失败：${error.message}`);
       }
     }
 
-    askBtn.addEventListener('click', async () => {
-      const value = questionInput.value.trim();
-      const goal = goalInput.value.trim();
-      const platform = platformSelect.value;
-      const style = styleInput.value.trim();
-      if (!value) {
-        setBannerState('status-error', '错误态：请输入原始提示词后再开始优化。');
-        answerBox.innerHTML = '<span class="answer-placeholder">尚未检测到有效提示词输入。</span>';
-        notesBox.innerHTML = '<span class="answer-placeholder">请先提供原始提示词，再生成优化说明。</span>';
-        sourceTags.innerHTML = '<span class="tag">输入为空</span>';
-        systemMsg.textContent = '系统消息：当前未接收到有效提示词，无法启动检索增强与优化生成流程。';
+    async function rebuildKnowledgeBase() {
+      refreshKbBtn.disabled = true;
+      setBanner("info", "正在构建或刷新知识库，请稍候...");
+      try {
+        const response = await fetch(rebuildUrl, { method: "POST" });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.detail || "知识库刷新失败");
+        }
+        await loadStatus();
+        setBanner("info", `${payload.message} 当前片段数：${payload.summary.store_count}`);
+      } catch (error) {
+        setBanner("error", `知识库刷新失败：${error.message}`);
+      } finally {
+        refreshKbBtn.disabled = false;
+      }
+    }
+
+    function renderNotes(notes) {
+      const notesList = document.getElementById("notes-list");
+      if (!notes || !notes.length) {
+        notesList.innerHTML = '<div class="note-item">模型未返回额外说明。</div>';
+        return;
+      }
+      notesList.innerHTML = notes
+        .map((note) => `<div class="note-item">${escapeHtml(note)}</div>`)
+        .join("");
+    }
+
+    function renderSources(sources) {
+      const sourcesList = document.getElementById("sources-list");
+      if (!sources || !sources.length) {
+        sourcesList.innerHTML = '<span class="source-pill">本次结果未返回来源</span>';
+        return;
+      }
+      sourcesList.innerHTML = sources
+        .map((source) => `<span class="source-pill">${escapeHtml(source)}</span>`)
+        .join("");
+    }
+
+    function renderChunks(chunks) {
+      const chunksList = document.getElementById("chunks-list");
+      if (!chunks || !chunks.length) {
+        chunksList.innerHTML = `
+          <div class="chunk-card">
+            <div class="chunk-head">
+              <span>未命中检索片段</span>
+              <span>请检查知识库或输入内容</span>
+            </div>
+            <pre>当前没有可以展示的检索证据。</pre>
+          </div>
+        `;
         return;
       }
 
-      setLoadingState();
+      chunksList.innerHTML = chunks
+        .map((chunk, index) => {
+          const scoreText = chunk.score == null ? "unknown" : Number(chunk.score).toFixed(4);
+          return `
+            <div class="chunk-card">
+              <div class="chunk-head">
+                <span>片段 ${index + 1} · ${escapeHtml(chunk.source || "unknown")}</span>
+                <span>score = ${escapeHtml(scoreText)}</span>
+              </div>
+              <pre>${escapeHtml(chunk.text || "")}</pre>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    async function optimizePrompt() {
+      const rawPrompt = document.getElementById("raw-prompt").value.trim();
+      if (!rawPrompt) {
+        setBanner("error", "请输入原始提示词。");
+        return;
+      }
+
+      optimizeBtn.disabled = true;
+      setBanner("info", "正在检索知识库并生成优化结果...");
+
+      const payload = {
+        raw_prompt: rawPrompt,
+        platform: document.getElementById("platform").value.trim() || "通用",
+        style: document.getElementById("style").value.trim(),
+        goal: document.getElementById("goal").value.trim(),
+      };
 
       try {
-        const response = await fetch('/api/optimize', {
-          method: 'POST',
+        const response = await fetch(optimizeUrl, {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            raw_prompt: value,
-            platform,
-            style,
-            goal
-          })
+          body: JSON.stringify(payload),
         });
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(normalizeErrorMessage(data.detail));
+          throw new Error(data.detail || "优化请求失败");
         }
 
-        answerBox.textContent = data.optimized_prompt || '';
-        notesBox.textContent = Array.isArray(data.notes) ? data.notes.join('\n') : String(data.notes || '');
+        document.getElementById("optimized-result").textContent = data.optimized_prompt || "";
+        renderNotes(data.notes || []);
         renderSources(data.sources || []);
-        renderEvidence(data.retrieved_chunks || []);
-
-        if ((data.retrieved_chunks || []).length === 0) {
-          setBannerState('status-info', '空结果态：知识库没有命中相关片段，当前返回保守优化结果。');
-        } else {
-          setBannerState('status-success', '成功态：已完成提示词检索增强与优化输出。');
-        }
-
-        systemMsg.textContent = `最近一次优化任务：平台=${platform}；风格=${style || '未指定'}；优化目标=${goal || '提升提示词质量'}；原始提示词=${value}`;
+        renderChunks(data.retrieved_chunks || []);
+        setBanner("info", "优化完成，当前结果已包含来源与检索证据。");
       } catch (error) {
-        setBannerState('status-error', `优化失败：${error.message}`);
-        answerBox.innerHTML = '<span class="answer-placeholder">后端调用失败，当前未返回优化结果。</span>';
-        notesBox.innerHTML = '<span class="answer-placeholder">请检查 API Key、知识库和后端服务状态。</span>';
-        sourceTags.innerHTML = '<span class="tag">请求失败</span>';
-        renderEvidence([]);
-        systemMsg.textContent = `后端错误：${error.message}`;
+        setBanner("error", `优化失败：${error.message}`);
+      } finally {
+        optimizeBtn.disabled = false;
       }
-    });
+    }
 
-    clearBtn.addEventListener('click', () => {
-      questionInput.value = '';
-      goalInput.value = '';
-      styleInput.value = '';
-      platformSelect.value = '通用';
-      setDefaultState();
-      systemMsg.textContent = '当前页面已重置为默认态。';
-    });
+    function clearPrompt() {
+      document.getElementById("raw-prompt").value = "";
+      document.getElementById("optimized-result").textContent = "结果将在这里显示。";
+      renderNotes([]);
+      renderSources([]);
+      renderChunks([]);
+      setBanner("info", "已清空输入，可以重新开始。");
+    }
 
-    refreshBtn.addEventListener('click', async () => {
-      setBannerState('status-info', '系统消息：正在构建或刷新提示词知识库...');
-      systemMsg.textContent = '已触发真实后端操作：构建/刷新提示词知识库。';
-
-      try {
-        const response = await fetch('/api/rebuild-kb', { method: 'POST' });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(normalizeErrorMessage(data.detail));
-        }
-
-        await loadStatus(data.message || '知识库已刷新。');
-        systemMsg.textContent = `知识库刷新完成：documents=${data.summary.documents_loaded}，chunks=${data.summary.chunks_indexed}`;
-      } catch (error) {
-        setBannerState('status-error', `知识库刷新失败：${error.message}`);
-        systemMsg.textContent = `知识库刷新失败：${error.message}`;
+    function applySample(sampleKey) {
+      const sample = samplePresets[sampleKey];
+      if (!sample) {
+        return;
       }
-    });
 
-    document.querySelectorAll('.example').forEach(btn => {
-      btn.addEventListener('click', () => {
-        questionInput.value = btn.textContent.trim();
+      document.getElementById("raw-prompt").value = sample.rawPrompt;
+      document.getElementById("platform").value = sample.platform;
+      document.getElementById("style").value = sample.style;
+      document.getElementById("goal").value = sample.goal;
+    }
+
+    async function initializeDemoFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const demo = params.get("demo");
+      if (!demo || !samplePresets[demo]) {
+        return;
+      }
+
+      applySample(demo);
+      setBanner("info", "演示样例已自动填充，正在生成结果...");
+      await optimizePrompt();
+    }
+
+    document.getElementById("clear-btn").addEventListener("click", clearPrompt);
+    optimizeBtn.addEventListener("click", optimizePrompt);
+    refreshKbBtn.addEventListener("click", rebuildKnowledgeBase);
+    refreshStatusBtn.addEventListener("click", loadStatus);
+
+    document.querySelectorAll("[data-sample]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [prompt, platform, style, goal] = button.dataset.sample.split("|");
+        document.getElementById("raw-prompt").value = prompt;
+        document.getElementById("platform").value = platform;
+        document.getElementById("style").value = style;
+        document.getElementById("goal").value = goal;
+        setBanner("info", "已填入样例参数，点击“开始优化”即可生成结果。");
       });
     });
 
-    setDefaultState();
-    loadStatus();
+    loadStatus().then(initializeDemoFromQuery);
   </script>
 </body>
 </html>

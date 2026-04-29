@@ -24,7 +24,7 @@ except ModuleNotFoundError:  # pragma: no cover - script execution fallback
 
 
 PAGE_TITLE = "DeepSeek RAG Demo"
-PAGE_ICON = "🔎"
+PAGE_ICON = "📘"
 
 
 def _relative_path(path: Path, root: Path) -> str:
@@ -72,17 +72,25 @@ def render_sidebar() -> None:
     discovered_docs = status["discovered_docs"]
 
     st.sidebar.header("系统状态")
-    st.sidebar.write(f"数据目录：`{_relative_path(settings.data_dir, settings.project_root)}`")
-    st.sidebar.write(f"向量库目录：`{_relative_path(settings.vector_db_dir, settings.project_root)}`")
+    st.sidebar.write(
+        f"数据目录：`{_relative_path(settings.data_dir, settings.project_root)}`"
+    )
+    st.sidebar.write(
+        f"向量库目录：`{_relative_path(settings.vector_db_dir, settings.project_root)}`"
+    )
     st.sidebar.write(f"Embedding：`{settings.embedding_model}`")
     st.sidebar.write(f"LLM：`{settings.deepseek_model}`")
     st.sidebar.write(f"Top-K：`{settings.top_k}`")
-    st.sidebar.write(f"Chunk：`{settings.chunk_size}` / Overlap：`{settings.chunk_overlap}`")
+    st.sidebar.write(
+        f"Chunk：`{settings.chunk_size}` / Overlap：`{settings.chunk_overlap}`"
+    )
 
     if status["has_api_key"]:
         st.sidebar.success("已检测到 DeepSeek API Key")
     else:
-        st.sidebar.warning("未检测到 DeepSeek API Key，页面只能查看知识库状态，无法生成答案。")
+        st.sidebar.warning(
+            "未检测到 DeepSeek API Key，当前只能查看知识库状态，无法生成答案。"
+        )
 
     vector_error = status["vector_error"]
     if vector_error:
@@ -134,7 +142,7 @@ def render_retrieved_chunks(retrieved_chunks: list[RetrievedChunk]) -> None:
         return
 
     for index, item in enumerate(retrieved_chunks, start=1):
-        score_text = "未知"
+        score_text = "unknown"
         if item.score is not None:
             score_text = f"{item.score:.4f}"
 
@@ -149,7 +157,7 @@ def render_main() -> None:
     """Render the main question-answer workflow."""
 
     st.title(PAGE_TITLE)
-    st.caption("课程项目演示版：输入问题，查看答案、来源和检索证据。")
+    st.caption("课程项目演示页：输入问题后，查看答案、来源和检索证据。")
 
     default_question = st.session_state.get(
         "question_input",
