@@ -178,17 +178,29 @@
     }
 
     .doc-pill,
-    .source-pill {
+    .source-pill,
+    .mode-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(20, 83, 45, 0.08);
-      color: var(--secondary);
-      border: 1px solid rgba(20, 83, 45, 0.08);
+      border: 1px solid transparent;
       font-size: 13px;
       margin: 0 8px 8px 0;
+    }
+
+    .doc-pill,
+    .source-pill {
+      background: rgba(20, 83, 45, 0.08);
+      color: var(--secondary);
+      border-color: rgba(20, 83, 45, 0.08);
+    }
+
+    .mode-pill {
+      background: rgba(180, 77, 42, 0.08);
+      color: #7d2f15;
+      border-color: rgba(180, 77, 42, 0.12);
     }
 
     .side-actions {
@@ -223,7 +235,7 @@
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       margin-top: 18px;
     }
@@ -239,6 +251,7 @@
     }
 
     input,
+    select,
     textarea {
       width: 100%;
       border-radius: 16px;
@@ -252,6 +265,7 @@
     }
 
     input:focus,
+    select:focus,
     textarea:focus {
       border-color: rgba(180, 77, 42, 0.55);
       box-shadow: 0 0 0 4px rgba(180, 77, 42, 0.08);
@@ -297,6 +311,14 @@
       background: var(--card);
     }
 
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
     .result-block {
       padding: 18px;
       border-radius: 18px;
@@ -304,6 +326,7 @@
       border: 1px solid rgba(180, 77, 42, 0.08);
       white-space: pre-wrap;
       line-height: 1.75;
+      margin-top: 14px;
     }
 
     .note-list {
@@ -391,6 +414,12 @@
       }
     }
 
+    @media (max-width: 900px) {
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
     @media (max-width: 760px) {
       .shell {
         width: min(100% - 18px, 100%);
@@ -418,8 +447,8 @@
         <div class="eyebrow">DeepSeek + RAG + Prompt Optimization</div>
         <h1>把原始提示词<br />变成可直接出图的结果</h1>
         <p>
-          这个页面用于课程项目最终演示。输入原始生图提示词后，系统会先检索本地知识库，再结合 DeepSeek
-          生成更完整、更可控、可追溯的优化结果，并展示来源片段。
+          这个页面用于课程项目最终演示。输入原始生图提示词后，你可以直接切换三种模式：
+          仅靠大模型优化、仅展示检索证据、或使用完整 RAG 链路生成最终结果，并同步查看来源与检索片段。
         </p>
         <div class="hero-metrics">
           <div class="metric">
@@ -458,7 +487,7 @@
           </div>
         </div>
         <div class="footer-note">
-          建议截图内容：默认状态、成功优化后的结果卡片、来源区域、检索片段区域。
+          建议截图内容：默认状态、模式选择、优化结果卡片、来源区域、检索片段区域。
         </div>
       </aside>
     </section>
@@ -472,13 +501,21 @@
           <button class="button button-secondary" id="refresh-status-btn">刷新状态</button>
         </div>
         <div class="footer-note" id="path-note">
-          当前会话将展示知识库文档列表、向量库片段数和模型配置，便于课程答辩说明系统链路。
+          当前会显示知识库文档列表、向量片段数量和模型配置，便于课程答辩时说明系统链路。
         </div>
       </aside>
 
       <main class="panel">
         <h2>提示词优化主流程</h2>
         <div class="form-grid">
+          <div class="field">
+            <label for="mode">优化模式</label>
+            <select id="mode">
+              <option value="rag">模式 3: RAG</option>
+              <option value="llm_only">模式 1: LLM-only</option>
+              <option value="retrieval_only">模式 2: Retrieval-only</option>
+            </select>
+          </div>
           <div class="field">
             <label for="platform">目标平台</label>
             <input id="platform" value="通用" />
@@ -497,7 +534,7 @@
         <textarea id="raw-prompt">一款高端香水的广告海报</textarea>
 
         <div class="form-actions">
-          <button class="button button-primary" id="optimize-btn">开始优化</button>
+          <button class="button button-primary" id="optimize-btn">开始执行</button>
           <button class="button button-secondary" id="clear-btn">清空输入</button>
         </div>
 
@@ -508,17 +545,20 @@
         </div>
 
         <div class="banner info show" id="message-banner">
-          输入原始提示词后点击“开始优化”，系统会返回优化后的提示词、说明、来源和检索片段。
+          输入原始提示词后点击“开始执行”，系统会按当前模式返回优化结果、说明、来源和检索片段。
         </div>
 
         <div class="result-stack">
           <section class="result-card">
-            <h2>优化结果</h2>
+            <h2>输出结果</h2>
+            <div class="result-meta">
+              <span class="mode-pill" id="active-mode-pill">当前模式：模式 3: RAG</span>
+            </div>
             <div class="result-block" id="optimized-result">结果将在这里显示。</div>
           </section>
 
           <section class="result-card">
-            <h2>优化说明</h2>
+            <h2>说明信息</h2>
             <div class="note-list" id="notes-list">
               <div class="note-item">系统会说明补充了哪些结构化维度，例如主体、材质、镜头、构图和光线。</div>
             </div>
@@ -527,7 +567,7 @@
           <section class="result-card">
             <h2>来源文档</h2>
             <div id="sources-list">
-              <span class="source-pill">等待一次成功优化</span>
+              <span class="source-pill">等待一次成功执行</span>
             </div>
           </section>
 
@@ -572,11 +612,18 @@
         goal: "突出材质、品牌感和广告构图",
       },
     };
+    const modeDescriptions = {
+      llm_only: "模式 1: LLM-only",
+      retrieval_only: "模式 2: Retrieval-only",
+      rag: "模式 3: RAG",
+    };
 
     const messageBanner = document.getElementById("message-banner");
     const optimizeBtn = document.getElementById("optimize-btn");
     const refreshKbBtn = document.getElementById("refresh-kb-btn");
     const refreshStatusBtn = document.getElementById("refresh-status-btn");
+    const modeSelect = document.getElementById("mode");
+    const activeModePill = document.getElementById("active-mode-pill");
 
     function setBanner(type, text) {
       messageBanner.className = `banner ${type} show`;
@@ -590,13 +637,18 @@
         .replaceAll(">", "&gt;");
     }
 
+    function updateModePill(mode) {
+      const label = modeDescriptions[mode] || mode;
+      activeModePill.textContent = `当前模式：${label}`;
+    }
+
     async function loadStatus() {
       setBanner("info", "正在获取运行状态...");
       try {
         const response = await fetch(statusUrl);
         const payload = await response.json();
         if (!response.ok) {
-          throw new Error(payload.detail || "状态接口请求失败");
+          throw new Error(payload.detail || "状态接口请求失败。");
         }
 
         document.getElementById("metric-docs").textContent = payload.document_count;
@@ -611,12 +663,12 @@
         const docList = document.getElementById("document-list");
         docList.innerHTML = docs.length
           ? docs.map((doc) => `<span class="doc-pill">${escapeHtml(doc)}</span>`).join("")
-          : '<span class="doc-pill">未发现可用知识库文档</span>';
+          : '<span class="doc-pill">未发现可用知识库文档。</span>';
 
         document.getElementById("path-note").textContent =
           `数据目录：${payload.data_dir} | 向量库目录：${payload.vector_db_dir}`;
 
-        setBanner("info", "状态已刷新，可以开始优化提示词。");
+        setBanner("info", "状态已刷新，可以开始执行提示词优化。");
       } catch (error) {
         setBanner("error", `状态读取失败：${error.message}`);
       }
@@ -629,7 +681,7 @@
         const response = await fetch(rebuildUrl, { method: "POST" });
         const payload = await response.json();
         if (!response.ok) {
-          throw new Error(payload.detail || "知识库刷新失败");
+          throw new Error(payload.detail || "知识库刷新失败。");
         }
         await loadStatus();
         setBanner("info", `${payload.message} 当前片段数：${payload.summary.store_count}`);
@@ -693,17 +745,27 @@
         .join("");
     }
 
+    function getEmptyResultText(mode) {
+      if (mode === "retrieval_only") {
+        return "该模式只返回检索证据，不会生成最终优化提示词。";
+      }
+      return "结果将在这里显示。";
+    }
+
     async function optimizePrompt() {
       const rawPrompt = document.getElementById("raw-prompt").value.trim();
+      const mode = modeSelect.value;
       if (!rawPrompt) {
         setBanner("error", "请输入原始提示词。");
         return;
       }
 
       optimizeBtn.disabled = true;
-      setBanner("info", "正在检索知识库并生成优化结果...");
+      updateModePill(mode);
+      setBanner("info", `正在执行 ${modeDescriptions[mode]} ...`);
 
       const payload = {
+        mode,
         raw_prompt: rawPrompt,
         platform: document.getElementById("platform").value.trim() || "通用",
         style: document.getElementById("style").value.trim(),
@@ -723,21 +785,28 @@
           throw new Error(data.detail || "优化请求失败");
         }
 
-        document.getElementById("optimized-result").textContent = data.optimized_prompt || "";
+        const resultText = data.optimized_prompt || getEmptyResultText(mode);
+        document.getElementById("optimized-result").textContent = resultText;
         renderNotes(data.notes || []);
         renderSources(data.sources || []);
         renderChunks(data.retrieved_chunks || []);
-        setBanner("info", "优化完成，当前结果已包含来源与检索证据。");
+
+        if (mode === "retrieval_only") {
+          setBanner("info", "检索证据已返回。该模式不会生成最终优化提示词。");
+        } else {
+          setBanner("info", `${data.mode_label} 执行完成，结果已包含说明与可追溯信息。`);
+        }
       } catch (error) {
-        setBanner("error", `优化失败：${error.message}`);
+        setBanner("error", `执行失败：${error.message}`);
       } finally {
         optimizeBtn.disabled = false;
       }
     }
 
     function clearPrompt() {
+      const mode = modeSelect.value;
       document.getElementById("raw-prompt").value = "";
-      document.getElementById("optimized-result").textContent = "结果将在这里显示。";
+      document.getElementById("optimized-result").textContent = getEmptyResultText(mode);
       renderNotes([]);
       renderSources([]);
       renderChunks([]);
@@ -759,6 +828,11 @@
     async function initializeDemoFromQuery() {
       const params = new URLSearchParams(window.location.search);
       const demo = params.get("demo");
+      const mode = params.get("mode");
+      if (mode && modeDescriptions[mode]) {
+        modeSelect.value = mode;
+        updateModePill(mode);
+      }
       if (!demo || !samplePresets[demo]) {
         return;
       }
@@ -772,6 +846,12 @@
     optimizeBtn.addEventListener("click", optimizePrompt);
     refreshKbBtn.addEventListener("click", rebuildKnowledgeBase);
     refreshStatusBtn.addEventListener("click", loadStatus);
+    modeSelect.addEventListener("change", () => {
+      updateModePill(modeSelect.value);
+      if (!document.getElementById("optimized-result").textContent.trim()) {
+        document.getElementById("optimized-result").textContent = getEmptyResultText(modeSelect.value);
+      }
+    });
 
     document.querySelectorAll("[data-sample]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -780,10 +860,11 @@
         document.getElementById("platform").value = platform;
         document.getElementById("style").value = style;
         document.getElementById("goal").value = goal;
-        setBanner("info", "已填入样例参数，点击“开始优化”即可生成结果。");
+        setBanner("info", "已填入样例参数，点击“开始执行”即可生成结果。");
       });
     });
 
+    updateModePill(modeSelect.value);
     loadStatus().then(initializeDemoFromQuery);
   </script>
 </body>

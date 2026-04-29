@@ -282,3 +282,33 @@ python src/build_vector_store.py
 
 - 最终报告 PDF
 - 最终打包提交材料
+
+## 14. 最终提交建议
+
+建议最终提交时至少包含以下内容：
+
+### 必交文件
+
+- `src/`：完整源码
+- `requirements.txt`
+- `README.md`
+- `.env.example`
+- `data/final/jimeng_prompt_knowledge_base.md`
+- `ai_deliverables/step-16-对比实验结果.md`
+- `reports/final_experiment_report.md`
+
+### 建议一并提交
+
+- `outputs/screenshots/` 下的课程截图
+- `ai_deliverables/step-16-实验测试样例.md`
+- `ai_deliverables/step-16-实验分析素材.md`
+- `ai_deliverables/step-16-页面设计交付说明.md`
+
+### 通常不建议提交
+
+- `.env`
+- `src/__pycache__/`
+- `outputs/experiment_results/` 下的临时日志
+- 本地运行过程中生成的缓存文件
+
+如果老师要求提交压缩包，建议按照 `源码 + README + 实验报告 + 截图 + 关键实验结果` 的结构统一打包。

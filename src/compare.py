@@ -149,6 +149,49 @@ def _run_rag_mode(
     )
 
 
+def run_mode(
+    mode: str,
+    *,
+    raw_prompt: str,
+    platform: str = DEFAULT_PLATFORM,
+    style: str = "",
+    goal: str = "",
+) -> dict[str, Any]:
+    """Run one prompt-optimization mode and normalize the output."""
+
+    normalized_prompt = raw_prompt.strip()
+    if not normalized_prompt:
+        raise ValueError("Raw prompt cannot be empty.")
+
+    normalized_platform = platform or DEFAULT_PLATFORM
+
+    handlers = {
+        "llm_only": lambda: _run_llm_only_mode(
+            raw_prompt=normalized_prompt,
+            platform=normalized_platform,
+            style=style,
+            goal=goal,
+        ),
+        "retrieval_only": lambda: _run_retrieval_only_mode(
+            raw_prompt=normalized_prompt,
+            platform=normalized_platform,
+            style=style,
+            goal=goal,
+        ),
+        "rag": lambda: _run_rag_mode(
+            raw_prompt=normalized_prompt,
+            platform=normalized_platform,
+            style=style,
+            goal=goal,
+        ),
+    }
+
+    if mode not in handlers:
+        raise ValueError(f"Unsupported mode: {mode}")
+
+    return _safe_execute(handlers[mode])
+
+
 def run_comparison(
     raw_prompt: str,
     *,
@@ -170,29 +213,26 @@ def run_comparison(
             "goal": goal,
         },
         "modes": {
-            "llm_only": _safe_execute(
-                lambda: _run_llm_only_mode(
-                    raw_prompt=normalized_prompt,
-                    platform=platform,
-                    style=style,
-                    goal=goal,
-                )
+            "llm_only": run_mode(
+                "llm_only",
+                raw_prompt=normalized_prompt,
+                platform=platform,
+                style=style,
+                goal=goal,
             ),
-            "retrieval_only": _safe_execute(
-                lambda: _run_retrieval_only_mode(
-                    raw_prompt=normalized_prompt,
-                    platform=platform,
-                    style=style,
-                    goal=goal,
-                )
+            "retrieval_only": run_mode(
+                "retrieval_only",
+                raw_prompt=normalized_prompt,
+                platform=platform,
+                style=style,
+                goal=goal,
             ),
-            "rag": _safe_execute(
-                lambda: _run_rag_mode(
-                    raw_prompt=normalized_prompt,
-                    platform=platform,
-                    style=style,
-                    goal=goal,
-                )
+            "rag": run_mode(
+                "rag",
+                raw_prompt=normalized_prompt,
+                platform=platform,
+                style=style,
+                goal=goal,
             ),
         },
     }
@@ -268,7 +308,9 @@ def _build_markdown_report(results: list[dict[str, Any]]) -> str:
             if retrieved_chunks:
                 top_chunk = retrieved_chunks[0]
                 sections.append(f"- Top chunk source: {top_chunk['source']}")
-                sections.append(f"- Top chunk preview: {top_chunk['text'][:180].replace(chr(10), ' ')}...")
+                sections.append(
+                    f"- Top chunk preview: {top_chunk['text'][:180].replace(chr(10), ' ')}..."
+                )
 
             sections.append("")
 

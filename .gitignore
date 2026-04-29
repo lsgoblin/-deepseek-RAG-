@@ -1,3 +1,4 @@
+# Python environments
 .venv/
 venv/
 env/
@@ -5,34 +6,47 @@ env/
 conda-meta/
 *.conda
 *.tar.bz2
+
+# Python caches and build artifacts
 __pycache__/
 *.py[cod]
 *.egg-info/
+.python-version
+
+# Test, lint, and notebook caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
 .ipynb_checkpoints/
-.python-version
 .coverage
 htmlcov/
-.cache/
+
+# IDE settings
 .idea/
 .vscode/
-*.log
+
+# Local secrets
 .env
 .env.local
 .env.*.local
 
+# Logs
+*.log
+/outputs/*.log
+
 # Local runtime artifacts
 /vector_store/*
 !/vector_store/.gitkeep
-/outputs/screenshots/*
-!/outputs/screenshots/.gitkeep
+
 /outputs/experiment_results/*
 !/outputs/experiment_results/.gitkeep
-/outputs/*.log
+
+# If you do not want to upload demo screenshots, uncomment these lines:
+# /outputs/screenshots/*
+# !/outputs/screenshots/.gitkeep
 
 # OS files
 Thumbs.db
 Desktop.ini
-
+.DS_Store
