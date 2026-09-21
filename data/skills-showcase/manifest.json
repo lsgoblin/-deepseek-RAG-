@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "snapshot_date": "2026-09-20",
+  "storage_mode": "local_content_only",
+  "items": [
+    {
+      "id": "heytea-doodle-poster",
+      "display_name": "实物＋微型工人涂鸦",
+      "skill_name": "heytea-doodle-poster",
+      "source_repository": "Hchen1218/heytea-style",
+      "source_commit": "d5125372adcc945c2314cfb649c50407379a18ab",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/Hchen1218/heytea-style/blob/d5125372adcc945c2314cfb649c50407379a18ab/SKILL.md",
+      "local_path": "data/skills-showcase/heytea-doodle-poster/SKILL.md",
+      "sha256": "cfb50f1323dccc0c608a9311bb65dc6c1d4e35b40010e3884297d53365ad00c4",
+      "license": "MIT",
+      "publication_status": "ready_with_license_notice"
+    },
+    {
+      "id": "scenes-gathered-zine-v1-3",
+      "display_name": "场景拾集 Zine",
+      "skill_name": "scenes-gathered-zine-v1-3",
+      "source_repository": "Zeejay0/gathered-scenes-zine-skill",
+      "source_commit": "b9edb836c9dd5c5d80995e89ebcaba34b75fd58f",
+      "source_path": "skills/scenes-gathered-zine-v1-3/SKILL.md",
+      "source_url": "https://github.com/Zeejay0/gathered-scenes-zine-skill/blob/b9edb836c9dd5c5d80995e89ebcaba34b75fd58f/skills/scenes-gathered-zine-v1-3/SKILL.md",
+      "local_path": "data/skills-showcase/scenes-gathered-zine-v1-3/SKILL.md",
+      "sha256": "96e594668959a151a095b76d0b5ca19314129c0e96fbebc395be2a164623cef7",
+      "license": "Gathered Scenes Zine Personal Non-Commercial License v1.0",
+      "publication_status": "restricted_review"
+    },
+    {
+      "id": "tait-crt-interface-skill",
+      "display_name": "复古 CRT 电脑界面",
+      "skill_name": "tait-crt-interface-skill",
+      "source_repository": "TaiT-tt/tait-crt-interface-skill",
+      "source_commit": "6bd76c91db0d5af9bbbf2a38ebb0880978be4105",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/TaiT-tt/tait-crt-interface-skill/blob/6bd76c91db0d5af9bbbf2a38ebb0880978be4105/SKILL.md",
+      "local_path": "data/skills-showcase/tait-crt-interface-skill/SKILL.md",
+      "sha256": "26c92d4e0111151cb11f60b31e12d996593ec1980826d39960bfc90d6cc9369d",
+      "license": "NO-LICENSE-FILE",
+      "publication_status": "blocked_no_license"
+    },
+    {
+      "id": "photo-abstract-editorial",
+      "display_name": "照片抽象编辑海报",
+      "skill_name": "photo-abstract-editorial",
+      "source_repository": "ZzzLc0405/photo-abstract-editorial",
+      "source_commit": "49e55073d6d0330274d31f75d27f5dd6eb35fd6d",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/ZzzLc0405/photo-abstract-editorial/blob/49e55073d6d0330274d31f75d27f5dd6eb35fd6d/SKILL.md",
+      "local_path": "data/skills-showcase/photo-abstract-editorial/SKILL.md",
+      "sha256": "b5c185bc788bb4eecd24d0226608a2083022bebd434af1c0ac88ce8b45f53374",
+      "license": "Custom personal/educational/research/non-commercial use",
+      "publication_status": "restricted_review"
+    },
+    {
+      "id": "yarn-rug-reference",
+      "display_name": "毛线地毯效果",
+      "skill_name": "yarn-rug-reference",
+      "source_repository": "rlx-better/yarn-rug-reference",
+      "source_commit": "edfc7e997754d1b73b68d48b8c35d85902a0fed6",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/rlx-better/yarn-rug-reference/blob/edfc7e997754d1b73b68d48b8c35d85902a0fed6/SKILL.md",
+      "local_path": "data/skills-showcase/yarn-rug-reference/SKILL.md",
+      "sha256": "6a8d00fd970de9252c16d467b91489c717a231841ff6c97593e2068808e45297",
+      "license": "MIT",
+      "publication_status": "ready_with_license_notice"
+    },
+    {
+      "id": "travel-memory-sticker-card",
+      "display_name": "旅行记忆贴纸卡",
+      "skill_name": "travel-memory-sticker-card",
+      "source_repository": "carolinaaafy/travel-memory-sticker-card",
+      "source_commit": "25ac9753bae206e452f1501c9a57f93f853df408",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/carolinaaafy/travel-memory-sticker-card/blob/25ac9753bae206e452f1501c9a57f93f853df408/SKILL.md",
+      "local_path": "data/skills-showcase/travel-memory-sticker-card/SKILL.md",
+      "sha256": "692e652d15308148c2c767045c5909cc55dca2c83d94b00fb66f13f5c323a877",
+      "license": "Travel Memory Sticker Card Personal-Use License",
+      "publication_status": "blocked_redistribution"
+    },
+    {
+      "id": "gc-minimal-zine-poster-v0-3",
+      "display_name": "GC 极简杂志海报",
+      "skill_name": "gc-minimal-zine-poster-v0-3",
+      "source_repository": "LiamGvchi/gc-minimal-zine-poster",
+      "source_commit": "ddb0d66b24a94f9c4fdd1f02835a836a2db3774e",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/LiamGvchi/gc-minimal-zine-poster/blob/ddb0d66b24a94f9c4fdd1f02835a836a2db3774e/SKILL.md",
+      "local_path": "data/skills-showcase/gc-minimal-zine-poster-v0-3/SKILL.md",
+      "sha256": "15362f77e875da6c293525e8eeba3bab24fe15d09d5cf5d5dec124974b553a80",
+      "license": "MIT",
+      "publication_status": "ready_with_license_notice"
+    },
+    {
+      "id": "ip-illustration-for-yourself",
+      "display_name": "个人 IP 萌粒风",
+      "skill_name": "ip-illustration-character-system",
+      "source_repository": "EverettFish/ip_illustration_for_yourself",
+      "source_commit": "6b0cb54e63fb270bb0c966991795d89d15499e76",
+      "source_path": "SKILL.md",
+      "source_url": "https://github.com/EverettFish/ip_illustration_for_yourself/blob/6b0cb54e63fb270bb0c966991795d89d15499e76/SKILL.md",
+      "local_path": "data/skills-showcase/ip-illustration-for-yourself/SKILL.md",
+      "sha256": "2672f778d8fca3b84c2427e5ec381ae8c851ee1c0aad8f8e97b5721e0c9a76a0",
+      "license": "NO-LICENSE-FILE",
+      "publication_status": "blocked_no_license",
+      "notes": "仓库名/展厅别名与 SKILL.md frontmatter 的实际 skill_name 不同。"
+    }
+  ]
+}

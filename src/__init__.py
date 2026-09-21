@@ -1,2 +1,1 @@
-"""RAG course project package."""
-
+"""IteraCanvas application package."""

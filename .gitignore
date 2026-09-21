@@ -39,6 +39,10 @@ htmlcov/
 /vector_store/*
 !/vector_store/.gitkeep
 
+# Third-party Skill正文仅作本机采集与授权评估；避免误提交受限内容
+/data/skills-showcase/*/SKILL.md
+/data/skills-showcase/*/LICENSE.upstream
+
 /outputs/experiment_results/*
 !/outputs/experiment_results/.gitkeep
 

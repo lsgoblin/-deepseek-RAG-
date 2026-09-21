@@ -1,0 +1,216 @@
+version: "1.0"
+
+figure:
+  title: "IteraCanvas retrieval-augmented prompt optimization"
+  subtitle: ""
+  direction: LR
+  target: paper
+  theme: paper-light
+  font: Arial
+  width_mm: 178
+  panel_gap_mm: 8
+  layout_preset: publication_framework
+  stage_labels:
+    inputs: "1) Inputs"
+    encoders: "2) Preparation & encoding"
+    interaction: "3) Retrieval & generation"
+    outputs: "4) Structured outputs"
+
+metadata:
+  source_framework: generic
+  source_files:
+    - src/loaders.py
+    - src/splitter.py
+    - src/embedder.py
+    - src/vectordb.py
+    - src/retriever.py
+    - src/prompt_optimizer.py
+    - src/llm.py
+    - src/config.py
+  mode: paper-overview
+  architecture_family: generic
+  novelty: "A shared text encoder links offline knowledge indexing with online retrieval-augmented prompt optimization."
+  publication_view:
+    compressed:
+      - "Runtime settings are summarized once instead of drawing every configuration edge."
+      - "The final Python dictionary assembly is omitted; its two manuscript-facing output groups are drawn directly."
+      - "The retrieval-query field is listed in the evidence output without a separate long diagnostic edge."
+  unresolved: []
+
+nodes:
+  - id: knowledge_sources
+    label: "Knowledge files"
+    subtitle: "5 formats"
+    role: input
+    kind: data
+    group: stage_inputs
+    illustration:
+      type: custom_dsl
+      composition: illustration-left
+      evidence: "src/loaders.py supports TXT, Markdown, PDF, DOCX, and XLSX knowledge files."
+      primitives:
+        - {shape: rect, x: 18, y: 18, w: 48, h: 62, fill: input, opacity: 0.10}
+        - {shape: rect, x: 27, y: 12, w: 48, h: 62, fill: accent, opacity: 0.13}
+        - {shape: line, x1: 36, y1: 31, x2: 66, y2: 31}
+        - {shape: line, x1: 36, y1: 43, x2: 66, y2: 43}
+        - {shape: line, x1: 36, y1: 55, x2: 58, y2: 55}
+
+  - id: optimization_request
+    label: "User request"
+    subtitle: ""
+    role: input
+    kind: data
+    group: stage_inputs
+    illustration:
+      type: custom_dsl
+      composition: illustration-left
+      evidence: "src/prompt_optimizer.py constructs the retrieval query from four request fields."
+      primitives:
+        - {shape: rect, x: 14, y: 18, w: 66, h: 58, fill: input, opacity: 0.10}
+        - {shape: line, x1: 24, y1: 31, x2: 69, y2: 31}
+        - {shape: line, x1: 24, y1: 43, x2: 61, y2: 43}
+        - {shape: line, x1: 24, y1: 55, x2: 72, y2: 55}
+
+  - id: runtime_settings
+    label: "Runtime settings"
+    subtitle: "k=3 · 400/80 · T=0.2"
+    role: input
+    kind: data
+    group: stage_inputs
+
+  - id: document_loader
+    label: "Document loader"
+    role: preprocess
+    kind: operator
+    group: stage_encoders
+
+  - id: text_chunker
+    label: "Overlapping chunker"
+    subtitle: "400 chars · 80 overlap"
+    role: preprocess
+    kind: operator
+    group: stage_encoders
+
+  - id: query_builder
+    label: "Retrieval query builder"
+    role: preprocess
+    kind: operator
+    group: stage_encoders
+
+  - id: shared_encoder
+    label: "Shared BGE text encoder"
+    subtitle: "bge-small-zh · normalized"
+    role: representation
+    kind: module
+    group: stage_encoders
+    shared: true
+
+  - id: chroma_store
+    label: "Chroma vector store"
+    subtitle: "cosine HNSW index"
+    role: auxiliary
+    kind: module
+    group: stage_interaction
+    shared: true
+    illustration:
+      type: custom_dsl
+      composition: illustration-top
+      evidence: "src/vectordb.py persists normalized chunk vectors in a Chroma cosine collection."
+      primitives:
+        - {shape: ellipse, cx: 50, cy: 24, rx: 28, ry: 9, fill: "#C9B8E8", opacity: 0.18}
+        - {shape: rect, x: 22, y: 24, w: 56, h: 43, fill: "#EEE8F8", opacity: 0.10}
+        - {shape: ellipse, cx: 50, cy: 67, rx: 28, ry: 9, fill: "#C9B8E8", opacity: 0.18}
+        - {shape: circle, cx: 37, cy: 43, r: 3, fill: accent}
+        - {shape: circle, cx: 50, cy: 51, r: 3, fill: accent}
+        - {shape: circle, cx: 63, cy: 39, r: 3, fill: accent}
+
+  - id: topk_retrieval
+    label: "Top-k similarity retrieval"
+    subtitle: "k = 3"
+    role: novel
+    kind: operator
+    group: stage_interaction
+    illustration:
+      type: custom_dsl
+      composition: illustration-top
+      evidence: "src/retriever.py embeds one query and requests the top-k nearest Chroma chunks."
+      primitives:
+        - {shape: rect, x: 22, y: 20, w: 54, h: 12, fill: accent, opacity: 0.26}
+        - {shape: rect, x: 22, y: 39, w: 42, h: 12, fill: accent, opacity: 0.19}
+        - {shape: rect, x: 22, y: 58, w: 31, h: 12, fill: accent, opacity: 0.13}
+        - {shape: text, x: 14, y: 29, text: "1", stroke: text}
+        - {shape: text, x: 14, y: 48, text: "2", stroke: text}
+        - {shape: text, x: 14, y: 67, text: "3", stroke: text}
+
+  - id: rag_prompt
+    label: "RAG prompt fusion"
+    subtitle: "request + retrieved context"
+    role: fusion
+    kind: merge
+    group: stage_interaction
+
+  - id: deepseek_generation
+    label: "DeepSeek generation"
+    subtitle: "deepseek-chat · T=0.2"
+    role: novel
+    kind: module
+    group: stage_interaction
+
+  - id: response_parser
+    label: "JSON response parser"
+    subtitle: "JSON + fallback"
+    role: head
+    kind: operator
+    group: stage_outputs
+
+  - id: optimized_prompt
+    label: "Optimized prompt"
+    subtitle: "prompt + notes"
+    role: output
+    kind: output
+    group: stage_outputs
+
+  - id: evidence_trace
+    label: "Evidence trace"
+    subtitle: "sources + chunks"
+    role: output
+    kind: output
+    group: stage_outputs
+
+edges:
+  - {from: knowledge_sources, to: document_loader, type: main}
+  - {from: document_loader, to: text_chunker, type: main}
+  - {from: text_chunker, to: shared_encoder, type: main}
+  - {from: shared_encoder, to: chroma_store, type: main}
+
+  - {from: optimization_request, to: query_builder, type: main}
+  - {from: query_builder, to: shared_encoder, type: main}
+  - {from: shared_encoder, to: topk_retrieval, type: main}
+  - {from: chroma_store, to: topk_retrieval, type: conditioning, label: "cosine search"}
+  - {from: topk_retrieval, to: rag_prompt, type: main, label: "context"}
+  - {from: optimization_request, to: rag_prompt, type: auxiliary, label: "request"}
+  - {from: rag_prompt, to: deepseek_generation, type: main}
+  - {from: deepseek_generation, to: response_parser, type: main}
+  - {from: response_parser, to: optimized_prompt, type: main}
+  - {from: topk_retrieval, to: evidence_trace, type: auxiliary, label: "provenance"}
+
+  - {from: runtime_settings, to: topk_retrieval, type: conditioning, label: "configuration"}
+
+annotations:
+  - "The same cached embedding model is reused for document chunks and online queries."
+  - "Solid arrows denote the primary data path; dashed arrows denote configuration or auxiliary provenance."
+
+groups:
+  - {id: stage_inputs, label: "1) Inputs", accent: input}
+  - {id: stage_encoders, label: "2) Preparation & encoding", accent: backbone}
+  - {id: stage_interaction, label: "3) Retrieval & generation", accent: novel}
+  - {id: stage_outputs, label: "4) Structured outputs", accent: output}
+
+style:
+  compact: false
+  show_shapes: true
+  show_repeat_badges: true
+  visual_grammar: true
+  illustration_budget: 4
+  stage_containers: true
+  colors: {}

@@ -1,0 +1,18 @@
+{
+  "validation_date": "2026-09-20",
+  "generator": "Codex built-in image generation",
+  "manifest_hash_matches": 8,
+  "visual_samples_generated": 8,
+  "fully_installable_packages": 0,
+  "source_photo_fidelity_tested": false,
+  "results": [
+    {"id":"heytea-doodle-poster","visual":"pass","strict":"conditional_pass","missing_declared_files":14,"publication_status":"ready_with_license_notice","sample":"01-heytea-doodle-poster.png"},
+    {"id":"scenes-gathered-zine-v1-3","visual":"pass","strict":"conditional_pass","missing_declared_files":0,"publication_status":"restricted_review","sample":"02-scenes-gathered-zine-v1-3.png"},
+    {"id":"tait-crt-interface-skill","visual":"pass","strict":"partial_fail","missing_declared_files":5,"publication_status":"blocked_no_license","sample":"03-tait-crt-interface-skill.png"},
+    {"id":"photo-abstract-editorial","visual":"pass","strict":"conditional_pass","missing_declared_files":3,"publication_status":"restricted_review","sample":"04-photo-abstract-editorial.png"},
+    {"id":"yarn-rug-reference","visual":"pass","strict":"partial_pass","missing_declared_files":0,"publication_status":"ready_with_license_notice","sample":"05-yarn-rug-reference.png","note":"2:3 ratio passed; exact 1080x1620 pixels not met"},
+    {"id":"travel-memory-sticker-card","visual":"pass","strict":"conditional_pass","missing_declared_files":1,"publication_status":"blocked_redistribution","sample":"06-travel-memory-sticker-card.png"},
+    {"id":"gc-minimal-zine-poster-v0-3","visual":"pass","strict":"conditional_pass","missing_declared_files":5,"publication_status":"ready_with_license_notice","sample":"07-gc-minimal-zine-poster-v0-3.png"},
+    {"id":"ip-illustration-for-yourself","frontmatter_name":"ip-illustration-character-system","visual":"pass","strict":"conditional_pass","missing_declared_files":13,"publication_status":"blocked_no_license","sample":"08-ip-illustration-for-yourself.png"}
+  ]
+}

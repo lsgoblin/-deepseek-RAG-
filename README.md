@@ -1,8 +1,19 @@
-# deployment-model-v2
+# IteraCanvas（迭绘）
 
-基于 DeepSeek + RAG 的 AI 生图提示词优化课程项目。
+跨平台图片诊断与图像创作 Skills 展示平台。
+
+> 工程设计 v0.3 已决定退出旧 DeepSeek + RAG 原型并重写 `src/`。下方旧原型说明仅用于清理前识别现状，不代表 IteraCanvas 目标实现；新代码完成后应同步重写本 README 的运行说明。
 
 本项目将课程要求中的 RAG 主链路落地到一个具体应用场景：用户输入原始生图提示词，系统先从本地知识库中检索提示词参考，再结合 DeepSeek 生成更完整、更可控、可追溯的优化结果。
+
+## 文档入口（唯一）
+
+- 当前产品需求：[`doc/IteraCanvas-产品需求规格-v0.2-20260920-175518.md`](doc/IteraCanvas-产品需求规格-v0.2-20260920-175518.md)
+- 唯一工程设计：[`doc/IteraCanvas-工程设计-v0.3.md`](doc/IteraCanvas-工程设计-v0.3.md)
+- 历史需求版本：`doc/IteraCanvas-产品需求规格-v0.1-20260920-103927.md`，仅用于追溯，不指导当前实现。
+- `outputs/legacy-rag-architecture/` 仅保存旧提示词 RAG 子系统的图形附件，不是当前总体架构或独立工程设计。
+
+除上述当前产品需求和唯一工程设计外，不再创建并行需求说明、技术方案或架构设计；安装与运行方法继续维护在本 README 中。
 
 ## 1. 项目简介
 
@@ -47,7 +58,7 @@
 ## 4. 目录结构
 
 ```text
-deployment-model-v2/
+iteracanvas/
 ├─ ai_deliverables/              # 过程文档与课程交付材料
 ├─ data/                         # 知识库数据
 │  ├─ raw/                       # 原始数据
@@ -81,7 +92,7 @@ deployment-model-v2/
 
 ## 5. 安装步骤
 
-建议在项目根目录 `D:\test\deployment-model-v2` 下执行：
+建议在项目根目录下执行：
 
 ```powershell
 pip install -r requirements.txt
