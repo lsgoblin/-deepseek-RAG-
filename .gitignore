@@ -36,6 +36,8 @@ htmlcov/
 /outputs/*.log
 
 # Local runtime artifacts
+/runtime/*
+!/runtime/.gitkeep
 /vector_store/*
 !/vector_store/.gitkeep
 
