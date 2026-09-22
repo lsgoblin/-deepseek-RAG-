@@ -1,0 +1,14 @@
+{
+  "context": {"purpose": "电商主图"},
+  "criteria": [{
+    "criterion_id": "crt_fixture",
+    "category": "subject",
+    "statement": "主体清晰",
+    "importance": "hard",
+    "source": "user",
+    "status": "confirmed",
+    "verification_mode": "visual"
+  }],
+  "missing_questions": [],
+  "inferences": []
+}

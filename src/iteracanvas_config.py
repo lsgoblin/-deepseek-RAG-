@@ -17,6 +17,7 @@ def _int_env(name: str, default: int) -> int:
 
 @dataclass(frozen=True)
 class Settings:
+    ai_mode: str = "mock"
     # 阶段 1 阈值来自工程设计第 15 章；真实供应商接入时只能进一步收紧。
     runtime_dir: Path = PROJECT_ROOT / "runtime"
     supported_image_formats: tuple[str, ...] = ("PNG", "JPEG", "WEBP")
@@ -52,6 +53,7 @@ class Settings:
         runtime_dir = Path(os.getenv("ITERACANVAS_RUNTIME_DIR", str(PROJECT_ROOT / "runtime")))
         return cls(
             runtime_dir=runtime_dir,
+            ai_mode=os.getenv("AI_MODE", "mock"),
             max_image_bytes=_int_env("MAX_IMAGE_BYTES", 10 * 1024 * 1024),
             max_image_pixels=_int_env("MAX_IMAGE_PIXELS", 40_000_000),
             max_images_per_round=_int_env("MAX_IMAGES_PER_ROUND", 8),

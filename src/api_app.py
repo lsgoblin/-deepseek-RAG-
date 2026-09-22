@@ -53,7 +53,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/")
     def home():
-        return {"name": "IteraCanvas", "phase": 1, "api": "/api/v1"}
+        return {"name": "IteraCanvas", "phase": 2, "api": "/api/v1", "ai_mode": settings.ai_mode}
 
     return app
 

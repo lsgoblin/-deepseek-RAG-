@@ -1,24 +1,42 @@
-"""FastAPI routes for the phase 1 persistence skeleton."""
+"""FastAPI routes for the IteraCanvas phase 2 mock-AI workflow."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, Header, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, Header, Request, UploadFile
 from fastapi.responses import JSONResponse
 
-from .iteracanvas_models import BranchCreate, RoundCreate, SpecVersionCreate, TaskCreate
+from .iteracanvas_models import (
+    AcceptCreate,
+    BranchCreate,
+    DiagnosisCreate,
+    DiagnosisReviewCreate,
+    PatchCreate,
+    RoundCreate,
+    SpecVersionCreate,
+    SpecExtractionCreate,
+    TaskCreate,
+)
 from .iteracanvas_services import (
     AppError,
+    accept_candidate,
+    add_diagnosis_review,
+    compare_round,
     confirm_spec,
     create_branch,
     create_round,
+    create_patch,
     create_task,
     delete_task,
     get_task,
+    get_diagnosis as get_diagnosis_result,
+    extract_task_spec,
     list_tasks,
     replay_idempotency,
     request_hash,
+    run_diagnosis,
     save_idempotency,
     save_spec,
+    start_diagnosis,
     upload_submission,
 )
 
@@ -71,6 +89,12 @@ def post_spec(request: Request, task_id: str, body: SpecVersionCreate, idempoten
     data = result.model_dump(mode="json")
     save_idempotency(_db(request), idempotency_key, "save_spec", body_hash, data)
     return _response(data, 201)
+
+
+@router.post("/tasks/{task_id}/spec-extractions")
+def post_spec_extraction(request: Request, task_id: str, body: SpecExtractionCreate = SpecExtractionCreate()):
+    result = extract_task_spec(_db(request), task_id, body.task_text, body.reference_images)
+    return _response(result)
 
 
 @router.post("/spec-versions/{version_id}/confirm")
@@ -131,6 +155,86 @@ async def post_submission(
     data = result.model_dump(mode="json")
     save_idempotency(_db(request), idempotency_key, "create_submission", body_hash, data)
     return _response(data, 201)
+
+
+@router.post("/candidates/{candidate_id}/diagnoses", status_code=202)
+def post_diagnosis(
+    request: Request,
+    candidate_id: str,
+    background_tasks: BackgroundTasks,
+    body: DiagnosisCreate = DiagnosisCreate(),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
+    body_hash = request_hash({"candidate_id": candidate_id, **body.model_dump(mode="json")})
+    replay = replay_idempotency(_db(request), idempotency_key, "start_diagnosis", body_hash)
+    if replay is not None:
+        return _response(replay, 202)
+    result = start_diagnosis(_db(request), candidate_id)
+    background_tasks.add_task(run_diagnosis, _db(request), result.id, _settings(request).ai_mode)
+    data = result.model_dump(mode="json")
+    save_idempotency(_db(request), idempotency_key, "start_diagnosis", body_hash, data)
+    return _response(data, 202)
+
+
+@router.get("/diagnoses/{diagnosis_id}")
+def get_diagnosis(request: Request, diagnosis_id: str):
+    return _response(get_diagnosis_result(_db(request), diagnosis_id))
+
+
+@router.post("/diagnoses/{diagnosis_id}/reviews", status_code=201)
+def post_diagnosis_review(
+    request: Request,
+    diagnosis_id: str,
+    body: DiagnosisReviewCreate,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
+    body_hash = request_hash({"diagnosis_id": diagnosis_id, **body.model_dump(mode="json")})
+    replay = replay_idempotency(_db(request), idempotency_key, "review_diagnosis", body_hash)
+    if replay is not None:
+        return _response(replay, 201)
+    result = add_diagnosis_review(_db(request), diagnosis_id, body)
+    data = result.model_dump(mode="json")
+    save_idempotency(_db(request), idempotency_key, "review_diagnosis", body_hash, data)
+    return _response(data, 201)
+
+
+@router.post("/rounds/{round_id}/patches", status_code=201)
+def post_patch(
+    request: Request,
+    round_id: str,
+    body: PatchCreate,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
+    body_hash = request_hash({"round_id": round_id, **body.model_dump(mode="json")})
+    replay = replay_idempotency(_db(request), idempotency_key, "create_patch", body_hash)
+    if replay is not None:
+        return _response(replay, 201)
+    result = create_patch(_db(request), round_id, body)
+    data = result.model_dump(mode="json")
+    save_idempotency(_db(request), idempotency_key, "create_patch", body_hash, data)
+    return _response(data, 201)
+
+
+@router.get("/rounds/{round_id}/comparison")
+def get_comparison(request: Request, round_id: str):
+    return _response(compare_round(_db(request), round_id))
+
+
+@router.post("/tasks/{task_id}/accept")
+def post_accept(
+    request: Request,
+    task_id: str,
+    body: AcceptCreate,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
+    body_hash = request_hash({"task_id": task_id, **body.model_dump(mode="json")})
+    replay = replay_idempotency(_db(request), idempotency_key, "accept_candidate", body_hash)
+    if replay is not None:
+        return _response(replay)
+    result = accept_candidate(_db(request), task_id, body.candidate_id)
+    data = result.model_dump(mode="json")
+    save_idempotency(_db(request), idempotency_key, "accept_candidate", body_hash, data)
+    return _response(data)
 
 
 @router.delete("/tasks/{task_id}")

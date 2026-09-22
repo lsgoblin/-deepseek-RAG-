@@ -1,11 +1,11 @@
-"""Pydantic models shared by the phase 1 API and persistence boundary."""
+"""Pydantic models shared by the API and persistence boundary."""
 
 from __future__ import annotations
 
 from typing import Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class StrictModel(BaseModel):
@@ -121,3 +121,90 @@ class DeletionReport(BaseModel):
     database_deleted: bool
     files_deleted: bool
     third_party_status: str = "not_applicable_local_demo"
+
+
+class DiagnosisCreate(StrictModel):
+    model_name: str | None = Field(default=None, max_length=200)
+
+
+class DiagnosisReviewCreate(StrictModel):
+    item_id: str
+    decision: Literal["confirm", "correct", "not_applicable", "cannot_judge", "revert"]
+    corrected: dict[str, Any] | None = Field(
+        default=None,
+        validation_alias=AliasChoices("corrected", "corrected_json", "corrected_item"),
+    )
+
+
+class SpecExtractionCreate(StrictModel):
+    task_text: str | None = Field(default=None, max_length=20_000)
+    reference_images: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class PatchCreate(StrictModel):
+    selected_item_ids: list[str] = Field(min_length=1)
+
+
+class AcceptCreate(StrictModel):
+    candidate_id: str
+
+
+class DiagnosisReviewOut(BaseModel):
+    id: str
+    diagnosis_id: str
+    item_id: str
+    decision: str
+    corrected: dict[str, Any] | None = None
+    created_at: str
+
+
+class EffectiveDiagnosisItem(BaseModel):
+    item_id: str
+    criterion_id: str | None = None
+    kind: str
+    verdict: str
+    evidence: dict[str, Any]
+    severity: str
+    confidence: str
+    possible_causes: list[str] = Field(default_factory=list)
+    violates_confirmed_hard_constraint: bool = False
+    resolution: str
+
+
+class DiagnosisOut(BaseModel):
+    id: str
+    candidate_id: str
+    spec_version_id: str
+    status: str
+    prompt_version: str | None = None
+    result: dict[str, Any] | None = None
+    error: dict[str, Any] | None = None
+    created_at: str
+    completed_at: str | None = None
+    reviews: list[DiagnosisReviewOut] = Field(default_factory=list)
+    effective_items: list[EffectiveDiagnosisItem] = Field(default_factory=list)
+
+
+class PatchOut(BaseModel):
+    id: str
+    task_id: str
+    source_round_id: str
+    source_spec_version_id: str
+    selected_item_ids: list[str]
+    base_prompt: str | None
+    base_params: dict[str, Any]
+    result: dict[str, Any]
+    created_at: str
+
+
+class ComparisonItem(BaseModel):
+    criterion_id: str
+    previous_verdict: str | None = None
+    current_verdict: str | None = None
+    outcome: Literal["improved", "regressed", "unchanged", "uncertain", "not_compared"]
+
+
+class ComparisonOut(BaseModel):
+    round_id: str
+    previous_round_id: str | None
+    items: list[ComparisonItem] = Field(default_factory=list)

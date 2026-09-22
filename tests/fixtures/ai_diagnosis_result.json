@@ -1,0 +1,16 @@
+{
+  "summary": "整体主体正确，但有一项要求待修复。",
+  "items": [{
+    "item_id": "diag_fixture",
+    "criterion_id": "crt_fixture",
+    "kind": "criterion",
+    "verdict": "fail",
+    "evidence": {"description": "主体边缘模糊", "region": "画面中央"},
+    "severity": "high",
+    "confidence": "high",
+    "possible_causes": ["模拟夹具中的固定问题"],
+    "violates_confirmed_hard_constraint": true
+  }],
+  "observations": [],
+  "uncertainties": []
+}

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def utc_now() -> str:
@@ -56,7 +56,7 @@ class Database:
         with self.connect() as connection:
             connection.executescript(
                 """
-                PRAGMA user_version = 1;
+                PRAGMA user_version = 2;
 
                 -- parent_task_id 使用 RESTRICT，保证父任务不能绕过子分支直接删除。
                 CREATE TABLE IF NOT EXISTS tasks (

@@ -1,0 +1,16 @@
+{
+  "prompt_changes": [{
+    "operation": "add",
+    "from": null,
+    "to": "主体边缘清晰",
+    "reason": "修复主体清晰度",
+    "diagnosis_item_ids": ["diag_fixture"]
+  }],
+  "parameter_changes": [],
+  "keep_unchanged": [],
+  "conflicts": [],
+  "side_effects": [],
+  "merged_prompt": "主体边缘清晰",
+  "merged_params": {},
+  "base_prompt_missing": false
+}

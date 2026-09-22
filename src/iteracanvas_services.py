@@ -1,13 +1,22 @@
-"""Phase 1 application services and domain rules."""
+"""Application services and domain rules for the local mock-AI workflow."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import sqlite3
+from types import SimpleNamespace
 from typing import Any
 from uuid import uuid4
 
+from .ai_gateway import (
+    DIAGNOSIS_PROMPT_VERSION,
+    DiagnosisItem,
+    DiagnosisResult,
+    diagnose_candidate,
+    extract_spec,
+    generate_patch,
+)
 from .iteracanvas_config import Settings
 from .iteracanvas_db import Database, json_dumps, json_loads, utc_now
 from .iteracanvas_files import (
@@ -22,8 +31,16 @@ from .iteracanvas_files import (
 )
 from .iteracanvas_models import (
     BranchCreate,
+    ComparisonItem,
+    ComparisonOut,
     CandidateOut,
+    DiagnosisOut,
+    DiagnosisReviewOut,
+    DiagnosisReviewCreate,
     DeletionReport,
+    EffectiveDiagnosisItem,
+    PatchCreate,
+    PatchOut,
     RoundCreate,
     RoundOut,
     SpecSnapshot,
@@ -114,6 +131,11 @@ def get_task(db: Database, task_id: str) -> TaskDetail:
         rounds=[_round_out(db, row) for row in rounds],
         child_task_ids=[row["id"] for row in children],
     )
+
+
+def extract_task_spec(db: Database, task_id: str, task_text: str | None, reference_images: list[dict[str, Any]]):
+    task = _task_row(db, task_id)
+    return extract_spec(task_text if task_text is not None else (task["description"] or ""), reference_images)
 
 
 def save_spec(db: Database, task_id: str, request: SpecVersionCreate) -> SpecVersionOut:
@@ -356,3 +378,407 @@ def save_idempotency(db: Database, key: str | None, operation: str, body_hash: s
             )
     except sqlite3.IntegrityError as exc:
         raise AppError(409, "IDEMPOTENCY_CONFLICT", "幂等键已被并发请求占用") from exc
+
+
+def _diagnosis_row(db: Database, diagnosis_id: str) -> sqlite3.Row:
+    row = db.fetchone("SELECT * FROM diagnoses WHERE id = ?", (diagnosis_id,))
+    if row is None:
+        raise _not_found("诊断", diagnosis_id)
+    return row
+
+
+def _diagnosis_items(row: sqlite3.Row) -> list[DiagnosisItem]:
+    if not row["result_json"]:
+        return []
+    result = DiagnosisResult.model_validate(json_loads(row["result_json"]))
+    return [*result.items, *result.observations]
+
+
+def _review_rows(db: Database, diagnosis_id: str) -> list[sqlite3.Row]:
+    return db.fetchall(
+        "SELECT * FROM diagnosis_reviews WHERE diagnosis_id = ? ORDER BY created_at, id",
+        (diagnosis_id,),
+    )
+
+
+def _effective_diagnosis_items(db: Database, row: sqlite3.Row) -> list[EffectiveDiagnosisItem]:
+    raw_items = {item.item_id: item for item in _diagnosis_items(row)}
+    stacks: dict[str, list[tuple[DiagnosisItem, str]]] = {item_id: [] for item_id in raw_items}
+    for review in _review_rows(db, row["id"]):
+        item_id = review["item_id"]
+        if item_id not in raw_items:
+            continue
+        if review["decision"] == "revert":
+            if stacks[item_id]:
+                stacks[item_id].pop()
+            continue
+        original = raw_items[item_id]
+        if review["decision"] == "confirm":
+            item, resolution = original, "confirmed"
+        elif review["decision"] == "correct":
+            corrected = DiagnosisItem.model_validate(json_loads(review["corrected_json"]))
+            item, resolution = corrected, "corrected"
+        elif review["decision"] == "not_applicable":
+            item = original.model_copy(update={"verdict": "not_applicable", "violates_confirmed_hard_constraint": False})
+            resolution = "not_applicable"
+        else:
+            item = original.model_copy(update={"verdict": "uncertain", "violates_confirmed_hard_constraint": False})
+            resolution = "cannot_judge"
+        stacks[item_id].append((item, resolution))
+
+    effective: list[EffectiveDiagnosisItem] = []
+    for item_id, original in raw_items.items():
+        item, resolution = stacks[item_id][-1] if stacks[item_id] else (original, "unreviewed")
+        effective.append(
+            EffectiveDiagnosisItem(
+                **item.model_dump(mode="json"),
+                resolution=resolution,
+            )
+        )
+    return effective
+
+
+def _diagnosis_out(db: Database, row: sqlite3.Row) -> DiagnosisOut:
+    return DiagnosisOut(
+        id=row["id"],
+        candidate_id=row["candidate_id"],
+        spec_version_id=row["spec_version_id"],
+        status=row["status"],
+        prompt_version=row["prompt_version"],
+        result=json_loads(row["result_json"]),
+        error=json_loads(row["error_json"]),
+        created_at=row["created_at"],
+        completed_at=row["completed_at"],
+        reviews=[
+            DiagnosisReviewOut(
+                id=review["id"], diagnosis_id=review["diagnosis_id"], item_id=review["item_id"],
+                decision=review["decision"], corrected=json_loads(review["corrected_json"]),
+                created_at=review["created_at"],
+            )
+            for review in _review_rows(db, row["id"])
+        ],
+        effective_items=_effective_diagnosis_items(db, row) if row["status"] == "succeeded" else [],
+    )
+
+
+def get_diagnosis(db: Database, diagnosis_id: str) -> DiagnosisOut:
+    return _diagnosis_out(db, _diagnosis_row(db, diagnosis_id))
+
+
+def get_effective_diagnosis_items(db: Database, diagnosis_id: str) -> list[EffectiveDiagnosisItem]:
+    row = _diagnosis_row(db, diagnosis_id)
+    if row["status"] != "succeeded":
+        return []
+    return _effective_diagnosis_items(db, row)
+
+
+def start_diagnosis(db: Database, candidate_id: str) -> DiagnosisOut:
+    row = db.fetchone(
+        """
+        SELECT c.id AS candidate_id, c.sha256, r.id AS round_id, r.round_no, r.status AS round_status,
+               r.task_id, r.spec_version_id, t.status AS task_status
+        FROM candidates c
+        JOIN generation_rounds r ON r.id = c.round_id
+        JOIN tasks t ON t.id = r.task_id
+        WHERE c.id = ?
+        """,
+        (candidate_id,),
+    )
+    if row is None:
+        raise _not_found("候选图", candidate_id)
+    if row["task_status"] == "accepted" or row["round_status"] == "closed":
+        raise AppError(400, "INVALID_STATE_TRANSITION", "当前候选图不可诊断")
+    existing = db.fetchone(
+        "SELECT * FROM diagnoses WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1",
+        (candidate_id,),
+    )
+    if existing is not None:
+        if existing["status"] in {"queued", "running", "succeeded"}:
+            raise AppError(409, "DIAGNOSIS_EXISTS", "候选图已有可用诊断", {"diagnosis_id": existing["id"]})
+        now = utc_now()
+        with db.transaction() as connection:
+            connection.execute(
+                "UPDATE diagnoses SET status = 'queued', result_json = NULL, error_json = NULL, completed_at = NULL WHERE id = ?",
+                (existing["id"],),
+            )
+            connection.execute("UPDATE generation_rounds SET status = 'diagnosing' WHERE id = ?", (row["round_id"],))
+            db.audit(connection, row["task_id"], "diagnosis.retried", "diagnosis", existing["id"], {"candidate_id": candidate_id})
+        return _diagnosis_out(db, _diagnosis_row(db, existing["id"]))
+
+    diagnosis_id, now = str(uuid4()), utc_now()
+    with db.transaction() as connection:
+        connection.execute(
+            "INSERT INTO diagnoses(id, candidate_id, spec_version_id, status, prompt_version, created_at) VALUES (?, ?, ?, 'queued', ?, ?)",
+            (diagnosis_id, candidate_id, row["spec_version_id"], DIAGNOSIS_PROMPT_VERSION, now),
+        )
+        connection.execute(
+            "UPDATE generation_rounds SET status = 'diagnosing' WHERE id = ?",
+            (row["round_id"],),
+        )
+        connection.execute("UPDATE tasks SET updated_at = ? WHERE id = ?", (now, row["task_id"]))
+        db.audit(connection, row["task_id"], "diagnosis.queued", "diagnosis", diagnosis_id, {"candidate_id": candidate_id})
+    return _diagnosis_out(db, _diagnosis_row(db, diagnosis_id))
+
+
+def run_diagnosis(db: Database, diagnosis_id: str, mode: str = "mock") -> None:
+    diagnosis = _diagnosis_row(db, diagnosis_id)
+    context = db.fetchone(
+        """
+        SELECT d.*, c.id AS candidate_id, c.sha256, r.id AS round_id, r.round_no, r.task_id,
+               r.status AS round_status, r.prompt_snapshot, r.params_json,
+               s.spec_json, t.status AS task_status
+        FROM diagnoses d
+        JOIN candidates c ON c.id = d.candidate_id
+        JOIN generation_rounds r ON r.id = c.round_id
+        JOIN spec_versions s ON s.id = d.spec_version_id
+        JOIN tasks t ON t.id = r.task_id
+        WHERE d.id = ?
+        """,
+        (diagnosis_id,),
+    )
+    if context is None or context["status"] not in {"queued", "running"}:
+        return
+    now = utc_now()
+    call_id = str(uuid4())
+    with db.transaction() as connection:
+        connection.execute("UPDATE diagnoses SET status = 'running' WHERE id = ?", (diagnosis_id,))
+        connection.execute(
+            "INSERT INTO model_calls(id, task_id, diagnosis_id, provider, model_name, prompt_version, request_hash, image_hashes_json, status, attempt_no, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', 1, ?)",
+            (
+                call_id,
+                context["task_id"],
+                diagnosis_id,
+                mode,
+                "mock-ai",
+                DIAGNOSIS_PROMPT_VERSION,
+                request_hash({"diagnosis_id": diagnosis_id, "sha256": context["sha256"]}),
+                json_dumps([context["sha256"]]),
+                now,
+            ),
+        )
+
+    try:
+        if mode != "mock":
+            raise ValueError(f"AI_MODE={mode} 暂未实现真实供应商")
+        from .iteracanvas_models import SpecSnapshot
+
+        spec = SpecSnapshot.model_validate(json_loads(context["spec_json"]))
+        result = diagnose_candidate(
+            spec,
+            SimpleNamespace(id=context["candidate_id"]),
+            generation_context={"round_no": context["round_no"]},
+        )
+        criterion_ids = {criterion.criterion_id for criterion in spec.criteria}
+        for item in [*result.items, *result.observations]:
+            if item.kind == "criterion" and item.criterion_id not in criterion_ids:
+                raise ValueError(f"unknown criterion_id: {item.criterion_id}")
+        completed = utc_now()
+        payload = result.model_dump(mode="json", by_alias=True)
+        with db.transaction() as connection:
+            connection.execute(
+                "UPDATE diagnoses SET status = 'succeeded', result_json = ?, completed_at = ? WHERE id = ?",
+                (json_dumps(payload), completed, diagnosis_id),
+            )
+            connection.execute(
+                "UPDATE generation_rounds SET status = 'awaiting_review' WHERE id = ?",
+                (context["round_id"],),
+            )
+            connection.execute(
+                "UPDATE model_calls SET status = 'succeeded', latency_ms = ?, usage_json = ? WHERE id = ?",
+                (0, json_dumps({"mode": "mock"}), call_id),
+            )
+            db.audit(connection, context["task_id"], "diagnosis.succeeded", "diagnosis", diagnosis_id)
+    except Exception as exc:
+        error = {"code": "MODEL_OUTPUT_INVALID", "message": str(exc)}
+        completed = utc_now()
+        with db.transaction() as connection:
+            connection.execute(
+                "UPDATE diagnoses SET status = 'failed_retryable', error_json = ?, completed_at = ? WHERE id = ?",
+                (json_dumps(error), completed, diagnosis_id),
+            )
+            connection.execute(
+                "UPDATE generation_rounds SET status = 'waiting_images' WHERE id = ?",
+                (context["round_id"],),
+            )
+            connection.execute(
+                "UPDATE model_calls SET status = 'failed', error_code = ? WHERE id = ?",
+                (error["code"], call_id),
+            )
+            db.audit(connection, context["task_id"], "diagnosis.failed", "diagnosis", diagnosis_id, error)
+
+
+def add_diagnosis_review(db: Database, diagnosis_id: str, request: DiagnosisReviewCreate) -> DiagnosisReviewOut:
+    row = _diagnosis_row(db, diagnosis_id)
+    if row["status"] != "succeeded":
+        raise AppError(400, "INVALID_STATE_TRANSITION", "诊断尚未成功，不能复核")
+    raw = {item.item_id: item for item in _diagnosis_items(row)}
+    if request.item_id not in raw:
+        raise AppError(400, "INVALID_REVIEW_ITEM", "复核项不属于当前诊断", {"item_id": request.item_id})
+    if request.decision == "correct":
+        if request.corrected is None:
+            raise AppError(400, "INVALID_REVIEW", "correct 决策必须提供 corrected")
+        corrected = dict(raw[request.item_id].model_dump(mode="json"))
+        corrected.update(request.corrected)
+        corrected["item_id"] = request.item_id
+        try:
+            checked = DiagnosisItem.model_validate(corrected)
+        except ValueError as exc:
+            raise AppError(422, "INVALID_REVIEW", "纠正后的诊断结构无效", {"error": str(exc)}) from exc
+        if checked.criterion_id != raw[request.item_id].criterion_id:
+            raise AppError(422, "INVALID_REVIEW", "不能修改诊断项关联的 criterion_id")
+        corrected_payload = checked.model_dump(mode="json")
+    else:
+        corrected_payload = None
+    if request.decision == "revert" and not any(review["item_id"] == request.item_id for review in _review_rows(db, diagnosis_id)):
+        raise AppError(400, "INVALID_REVIEW", "没有可撤销的复核")
+
+    review_id, now = str(uuid4()), utc_now()
+    with db.transaction() as connection:
+        connection.execute(
+            "INSERT INTO diagnosis_reviews(id, diagnosis_id, item_id, decision, corrected_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (review_id, diagnosis_id, request.item_id, request.decision, json_dumps(corrected_payload) if corrected_payload else None, now),
+        )
+        candidate = db.fetchone(
+            "SELECT r.task_id FROM diagnoses d JOIN candidates c ON c.id = d.candidate_id JOIN generation_rounds r ON r.id = c.round_id WHERE d.id = ?",
+            (diagnosis_id,),
+        )
+        db.audit(connection, candidate["task_id"], "diagnosis.reviewed", "diagnosis_review", review_id, {"decision": request.decision, "item_id": request.item_id})
+    return DiagnosisReviewOut(
+        id=review_id, diagnosis_id=diagnosis_id, item_id=request.item_id,
+        decision=request.decision, corrected=corrected_payload, created_at=now,
+    )
+
+
+def _apply_parameter_changes(base: dict[str, Any], changes: list[dict[str, Any]]) -> dict[str, Any]:
+    merged = dict(base)
+    for change in changes:
+        operation, name = change["operation"], change["name"]
+        if operation in {"add", "replace"}:
+            merged[name] = change.get("new_value")
+        elif operation == "remove":
+            merged.pop(name, None)
+        elif operation != "keep":
+            raise AppError(422, "MODEL_OUTPUT_INVALID", f"不支持的参数操作: {operation}")
+    return merged
+
+
+def create_patch(db: Database, round_id: str, request: PatchCreate) -> PatchOut:
+    round_row = db.fetchone("SELECT * FROM generation_rounds WHERE id = ?", (round_id,))
+    if round_row is None:
+        raise _not_found("生成轮次", round_id)
+    if round_row["status"] not in {"awaiting_review", "patch_ready"}:
+        raise AppError(400, "INVALID_STATE_TRANSITION", "当前轮次尚未完成诊断复核")
+    spec_row = db.fetchone("SELECT * FROM spec_versions WHERE id = ?", (round_row["spec_version_id"],))
+    diagnoses = db.fetchall(
+        "SELECT d.* FROM diagnoses d JOIN candidates c ON c.id = d.candidate_id WHERE c.round_id = ? AND d.status = 'succeeded' ORDER BY d.created_at",
+        (round_id,),
+    )
+    effective_by_id = {
+        item.item_id: item
+        for diagnosis in diagnoses
+        for item in _effective_diagnosis_items(db, diagnosis)
+    }
+    selected = []
+    for item_id in request.selected_item_ids:
+        item = effective_by_id.get(item_id)
+        if item is None:
+            raise AppError(400, "INVALID_PATCH_ITEM", "补丁项不属于当前轮次", {"item_id": item_id})
+        if item.verdict in {"pass", "not_applicable"} or item.resolution in {"not_applicable", "cannot_judge"}:
+            raise AppError(400, "INVALID_PATCH_ITEM", "只能选择未通过或不确定的问题", {"item_id": item_id})
+        selected.append(DiagnosisItem.model_validate(item.model_dump(exclude={"resolution"})))
+
+    from .iteracanvas_models import SpecSnapshot
+
+    spec = SpecSnapshot.model_validate(json_loads(spec_row["spec_json"]))
+    base_params = json_loads(round_row["params_json"], {})
+    result = generate_patch(spec, selected, round_row["prompt_snapshot"], base_params)
+    result_payload = result.model_dump(mode="json", by_alias=True)
+    merged_params = _apply_parameter_changes(base_params, result_payload["parameter_changes"])
+    if merged_params != result_payload["merged_params"]:
+        raise AppError(422, "MODEL_OUTPUT_INVALID", "模型返回的 merged_params 与服务端计算不一致")
+    patch_id, now = str(uuid4()), utc_now()
+    with db.transaction() as connection:
+        connection.execute(
+            "INSERT INTO patches(id, task_id, source_round_id, source_spec_version_id, selected_item_ids_json, base_prompt, base_params_json, diff_json, merged_prompt, merged_params_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                patch_id, round_row["task_id"], round_id, round_row["spec_version_id"],
+                json_dumps(request.selected_item_ids), round_row["prompt_snapshot"], json_dumps(base_params),
+                json_dumps(result_payload), result_payload["merged_prompt"], json_dumps(merged_params), now,
+            ),
+        )
+        connection.execute("UPDATE generation_rounds SET status = 'patch_ready' WHERE id = ?", (round_id,))
+        connection.execute("UPDATE tasks SET updated_at = ? WHERE id = ?", (now, round_row["task_id"]))
+        db.audit(connection, round_row["task_id"], "patch.created", "patch", patch_id, {"round_id": round_id, "selected_item_ids": request.selected_item_ids})
+    return PatchOut(
+        id=patch_id, task_id=round_row["task_id"], source_round_id=round_id,
+        source_spec_version_id=round_row["spec_version_id"], selected_item_ids=request.selected_item_ids,
+        base_prompt=round_row["prompt_snapshot"], base_params=base_params, result=result_payload, created_at=now,
+    )
+
+
+def compare_round(db: Database, round_id: str) -> ComparisonOut:
+    current = db.fetchone("SELECT * FROM generation_rounds WHERE id = ?", (round_id,))
+    if current is None:
+        raise _not_found("生成轮次", round_id)
+    previous = db.fetchone(
+        "SELECT * FROM generation_rounds WHERE task_id = ? AND round_no < ? ORDER BY round_no DESC LIMIT 1",
+        (current["task_id"], current["round_no"]),
+    )
+    if previous is None:
+        return ComparisonOut(round_id=round_id, previous_round_id=None, items=[])
+
+    def verdicts(round_id_value: str) -> dict[str, str]:
+        rows = db.fetchall(
+            "SELECT d.* FROM diagnoses d JOIN candidates c ON c.id = d.candidate_id WHERE c.round_id = ? AND d.status = 'succeeded' ORDER BY d.created_at",
+            (round_id_value,),
+        )
+        result: dict[str, str] = {}
+        for diagnosis in rows:
+            for item in _effective_diagnosis_items(db, diagnosis):
+                if item.criterion_id and item.criterion_id not in result:
+                    result[item.criterion_id] = item.verdict
+        return result
+
+    before, after = verdicts(previous["id"]), verdicts(round_id)
+    items: list[ComparisonItem] = []
+    for criterion_id in sorted(set(before) & set(after)):
+        old, new = before[criterion_id], after[criterion_id]
+        if "not_applicable" in {old, new}:
+            outcome = "not_compared"
+        elif "uncertain" in {old, new}:
+            outcome = "uncertain"
+        elif old == "fail" and new == "pass":
+            outcome = "improved"
+        elif old == "pass" and new == "fail":
+            outcome = "regressed"
+        else:
+            outcome = "unchanged"
+        items.append(ComparisonItem(criterion_id=criterion_id, previous_verdict=old, current_verdict=new, outcome=outcome))
+    return ComparisonOut(round_id=round_id, previous_round_id=previous["id"], items=items)
+
+
+def accept_candidate(db: Database, task_id: str, candidate_id: str) -> TaskSummary:
+    row = db.fetchone(
+        """
+        SELECT c.id, r.id AS round_id, r.task_id, d.id AS diagnosis_id, d.status AS diagnosis_status
+        FROM candidates c JOIN generation_rounds r ON r.id = c.round_id
+        LEFT JOIN diagnoses d ON d.candidate_id = c.id
+        WHERE c.id = ? AND r.task_id = ? ORDER BY d.created_at DESC LIMIT 1
+        """,
+        (candidate_id, task_id),
+    )
+    if row is None:
+        raise _not_found("候选图", candidate_id)
+    task = _task_row(db, task_id)
+    if task["status"] == "accepted":
+        if task["accepted_candidate_id"] == candidate_id:
+            return _task_summary(task)
+        raise AppError(400, "INVALID_STATE_TRANSITION", "已接受任务不可更换候选图")
+    if row["diagnosis_status"] != "succeeded":
+        raise AppError(400, "INVALID_STATE_TRANSITION", "只能接受已完成诊断的候选图")
+    now = utc_now()
+    with db.transaction() as connection:
+        connection.execute("UPDATE tasks SET status = 'accepted', accepted_candidate_id = ?, updated_at = ? WHERE id = ?", (candidate_id, now, task_id))
+        connection.execute("UPDATE generation_rounds SET status = 'closed' WHERE id = ?", (row["round_id"],))
+        db.audit(connection, task_id, "task.accepted", "candidate", candidate_id, {"round_id": row["round_id"]})
+    return _task_summary(_task_row(db, task_id))
